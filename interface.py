@@ -1,4 +1,6 @@
 import os
+import getopt
+import sys
 import numpy as np
 import utilities
 import learner
@@ -115,13 +117,30 @@ class Interface():
                 costs = np.hstack((costs, 1000.0))
         return costs
 
-def main():
+def main(argv):
+    try:
+        options, args = getopt.getopt(argv, "hl:", ["help", "load="])
+    except getopt.GetoptError:
+        sys.exit()
+    load = False
+    print(options)
+    print(args)
+    for option, value in options:
+        if option in ("-h", "--help"):
+            print("initialize a new experiment: run interface.py with no args")
+            print("continue experiments based on the archive: interface.py -l[--load] \"YYYY-MM-DD_hh-mm\"")
+        if option in ("-l", "--load"):
+            load = True
+            datetime = value
+
     interface = Interface()
     learn = learner.Learner(interface)
-    learn.init()
-    # learn.load('2020-11-16_20-32')
+    if load:
+        learn.load(datetime)
+    else:
+        learn.init()
     learn.train()
     learn.plot_best_cost_list()
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

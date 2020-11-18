@@ -111,6 +111,9 @@ def txt_file_to_dict(filename):
             if temp != '':
                 tdict_string += temp+','
         in_file.close()
+    array = np.array
+    inf = float('inf')
+    nan = float('nan')
     tdict = eval('dict('+tdict_string+')')
     return tdict
 
