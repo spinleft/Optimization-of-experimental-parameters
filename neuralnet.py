@@ -106,13 +106,6 @@ class NeuralNet():
         return self._loss_and_metrics(params, costs)[0]
 
     def fit(self, params, costs, max_epoch):
-        '''
-        Fit the neural net to the provided data
-
-        Args:
-            params (array): array of parameter arrays
-            costs (array): array of costs (associated with the corresponding parameters)
-        '''
         params_scaled = self._scale_params(params)
         costs_scaled = self._scale_costs(costs)
 

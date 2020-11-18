@@ -18,8 +18,9 @@ class Interface():
 
         # 训练参数
         self.initial_params_set_size = 10
-        self.predict_params_set_size = 100000
-        self.subsequent_params_set_size = 10
+        self.predict_good_params_set_size = 100000
+        self.test_good_params_set_size = 10
+        self.extra_remotest_params_set_size = 5
         self.window_size = 50
         self.max_num_iteration = 100
         self.save_params_set_size = 10
@@ -117,8 +118,8 @@ class Interface():
 def main():
     interface = Interface()
     learn = learner.Learner(interface)
-    # learn.init()
-    learn.load('2020-11-16_20-32')
+    learn.init()
+    # learn.load('2020-11-16_20-32')
     learn.train()
     learn.plot_best_cost_list()
 
