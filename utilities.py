@@ -24,7 +24,10 @@ def get_dict_from_file(filename):
             temp = (line.partition('#')[0]).strip('\n').strip()
             if temp != '':
                 tdict_string += temp + ','
-    in_file.close()
+        in_file.close()
+    array = np.array
+    inf = float('inf')
+    nan = float('nan')
     tdict = eval('dict(' + tdict_string + ')')
     return tdict
 
@@ -75,7 +78,7 @@ def get_datetime_now_string():
     return now.strftime('%Y-%m-%d_%H-%M')
 
 
-def dict_to_txt_file(tdict, filename):
+def save_dict_to_txt_file(tdict, filename):
     '''
     Method for writing a dict to a file with syntax similar to how files are input.
 
@@ -88,34 +91,6 @@ def dict_to_txt_file(tdict, filename):
             out_file.write(
                 str(key) + '=' + repr(tdict[key]).replace('\n', '').replace('\r', '') + '\n')
         out_file.close()
-
-
-def txt_file_to_dict(filename):
-    '''
-    Method for taking a file and changing it to a dict. Every line in file is a new entry for the dictionary and each element should be written as::
-
-        [key] = [value]
-
-    White space does not matter.
-
-    Args:
-        filename (string): Filename of file.
-
-    Returns:
-        tdict : Dictionary of values in file. 
-    '''
-    with open(filename, 'r') as in_file:
-        tdict_string = ''
-        for line in in_file:
-            temp = (line.partition('#')[0]).strip('\n').strip()
-            if temp != '':
-                tdict_string += temp+','
-        in_file.close()
-    array = np.array
-    inf = float('inf')
-    nan = float('nan')
-    tdict = eval('dict('+tdict_string+')')
-    return tdict
 
 
 def get_init_params(min_boundary, max_boundary, initial_params_set_size):

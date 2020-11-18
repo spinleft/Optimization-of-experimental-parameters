@@ -117,7 +117,7 @@ class Learner():
         load_archive_filename = os.path.join(
             self.archive_dir, self.archive_file_prefix+start_datetime+'.txt')
         # 从存档中读取参数
-        self.archive = utilities.txt_file_to_dict(load_archive_filename)
+        self.archive = utilities.get_dict_from_file(load_archive_filename)
         print("Loading.")
         # 实验参数
         num_params = int(self.archive['num_params'])
@@ -267,7 +267,7 @@ class Learner():
                     (save_params_set, params_subset[index]))
         self.archive.update({'save_params_set': save_params_set})
         self.archive.update({'neural_net_archive_filename': self.net.save()})
-        utilities.dict_to_txt_file(self.archive, self.archive_filename)
+        utilities.save_dict_to_txt_file(self.archive, self.archive_filename)
 
     def plot_best_cost_list(self):
         x_axis = np.arange(start=0, stop=len(
