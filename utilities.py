@@ -161,12 +161,3 @@ def get_remotest_params(min_boundary, max_boundary, train_params_set):
     remotest_params = (params_sort[high_indexs] - params_sort[low_indexs]) / 2
     
     return remotest_params
-
-
-
-if __name__ == '__main__':
-    tdict = {'a': 'neural_net', 'b': np.array(
-        [1, 2, 3, 4, 5]), 'c': {1: 2, 3: 4}}
-    dict_to_txt_file(tdict, './test.txt')
-    fdict = txt_file_to_dict('./test.txt')
-    print(fdict)
