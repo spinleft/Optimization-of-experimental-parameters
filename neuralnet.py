@@ -111,7 +111,7 @@ class NeuralNet():
         costs_scaled = self._scale_costs(costs)
 
         early_stopping = EarlyStopping(
-            monitor='loss', min_delta=self.train_threshold_ratio, patience=0, mode='min')
+            monitor='loss', min_delta=self.train_threshold_ratio, patience=6, mode='min')
 
         self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
                        batch_size=self.batch_size, verbose=0, callbacks=[early_stopping])

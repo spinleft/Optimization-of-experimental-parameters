@@ -19,8 +19,8 @@ class Learner():
 
         # 神经网络超参数
         self.layer_dims = [64] * 5
-        # 神经网络的loss下降小于train_threshold_ratio时，停止训练
-        self.train_threshold_ratio = 0.01
+        # 神经网络的loss下降小于train_threshold_ratio若干次时，停止训练
+        self.train_threshold_ratio = 0.0
         self.batch_size = 8                     # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
@@ -34,7 +34,7 @@ class Learner():
         self.window_size = interface.window_size
         self.max_num_iteration = interface.max_num_iteration
         self.save_params_set_size = interface.save_params_set_size
-        self.init_net_weight_num = 1
+        self.init_net_weight_num = 10
         self.gaussian_ratio = 0.5
         self.gaussian_sigma = 0.03
 
