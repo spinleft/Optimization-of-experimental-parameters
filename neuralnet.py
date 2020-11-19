@@ -55,7 +55,8 @@ class NeuralNet():
         for layer_dim in layer_dims:
             self.model.add(layers.Dense(layer_dim,
                                         activation='gelu',
-                                        kernel_regularizer=regularizers.l2(self.regularisation_coefficient),
+                                        kernel_regularizer=regularizers.l2(
+                                            self.regularisation_coefficient),
                                         input_shape=(prev_layer_dim,)))
             self.model.add(layers.Dropout(self.dropout_prob))
             prev_layer_dim = layer_dim
@@ -99,7 +100,7 @@ class NeuralNet():
         costs_unscaled += self.costs_mean
 
     def _loss_and_metrics(self, params, costs):
-        loss, metrics = self.model.evaluate(params, costs)
+        loss, metrics = self.model.evaluate(params, costs, verbose=0)
         return loss, metrics
 
     def get_loss(self, params, costs):
@@ -109,10 +110,12 @@ class NeuralNet():
         params_scaled = self._scale_params(params)
         costs_scaled = self._scale_costs(costs)
 
-        early_stopping = EarlyStopping(monitor='loss', min_delta=self.train_threshold_ratio, patience=0, mode='min')
-        
-        self.model.fit(params_scaled, costs_scaled, epochs=max_epoch, batch_size=self.batch_size, verbose=0, callbacks=[early_stopping])
-        
+        early_stopping = EarlyStopping(
+            monitor='loss', min_delta=self.train_threshold_ratio, patience=0, mode='min')
+
+        self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
+                       batch_size=self.batch_size, verbose=0, callbacks=[early_stopping])
+
     def predict_costs(self, params):
         return np.array(self.model.predict(params, verbose=0, use_multiprocessing=True))
 

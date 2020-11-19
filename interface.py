@@ -20,7 +20,7 @@ class Interface():
 
         # 训练参数
         self.initial_params_set_size = 10
-        self.predict_good_params_set_size = 100000
+        self.predict_params_set_size = 100000
         self.test_good_params_set_size = 10
         self.extra_remotest_params_set_size = 5
         self.window_size = 50
@@ -50,15 +50,18 @@ class Interface():
             wave = utilities.waveform(
                 self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
             # 保存波形到文件
-            wave_filename = os.path.join(self.wave_dir, str(self.params_index)+'.txt')
+            wave_filename = os.path.join(
+                self.wave_dir, str(self.params_index)+'.txt')
             utilities.save_params_to_file(wave_filename, wave)
             # 发送信号文件
-            signal_filename = os.path.join(self.signal_dir, str(self.params_index)+'.txt')
+            signal_filename = os.path.join(
+                self.signal_dir, str(self.params_index)+'.txt')
             utilities.save_params_to_file(signal_filename, [])
             # 参数文件序号增一
             self.params_index += 1
             # 读取实验结果
-            result_filename = os.path.join(self.result_dir, str(self.result_index)+'.txt')
+            result_filename = os.path.join(
+                self.result_dir, str(self.result_index)+'.txt')
             temp = utilities.get_result_from_file(result_filename)
             # 计算cost
             bad = False
@@ -67,15 +70,18 @@ class Interface():
             while bad == True:
                 # 失锁等原因产生坏数据，重新进行实验
                 # 保存波形到文件
-                wave_filename = os.path.join(self.wave_dir, str(self.params_index)+'.txt')
+                wave_filename = os.path.join(
+                    self.wave_dir, str(self.params_index)+'.txt')
                 utilities.save_params_to_file(wave_filename, wave)
                 # 发送信号文件
-                signal_filename = os.path.join(self.signal_dir, str(self.params_index)+'.txt')
+                signal_filename = os.path.join(
+                    self.signal_dir, str(self.params_index)+'.txt')
                 utilities.save_params_to_file(signal_filename, [])
                 # 参数文件序号增一
                 self.params_index += 1
                 # 读取实验结果
-                result_filename = os.path.join(self.result_dir, str(self.result_index)+'.txt')
+                result_filename = os.path.join(
+                    self.result_dir, str(self.result_index)+'.txt')
                 temp = utilities.get_result_from_file(result_filename)
                 # 计算cost
                 cost = temp
@@ -97,14 +103,16 @@ class Interface():
             len_x = len(x)
             t = 0
             bad = False
-            wave = utilities.waveform(self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
+            wave = utilities.waveform(
+                self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
             for i in range(1, len_x):
                 if wave[i] > 10.0 or wave[i] == float('nan'):
                     bad = True
                     break
                 else:
                     v_i = np.sqrt(2 * g * (10.0 - wave[i - 1]))
-                    s = np.sqrt((x[i] - x[i - 1]) ** 2 + (wave[i - 1] - wave[i]) ** 2)
+                    s = np.sqrt((x[i] - x[i - 1]) ** 2 +
+                                (wave[i - 1] - wave[i]) ** 2)
                     a = (wave[i - 1] - wave[i]) / s
                     if np.abs(a) < 1e-15:
                         t += s / v_i
@@ -117,18 +125,18 @@ class Interface():
                 costs = np.hstack((costs, 1000.0))
         return costs
 
+
 def main(argv):
     try:
-        options, args = getopt.getopt(argv, "hl:", ["help", "load="])
+        options, _ = getopt.getopt(argv, "hl:", ["help", "load="])
     except getopt.GetoptError:
         sys.exit()
     load = False
-    print(options)
-    print(args)
     for option, value in options:
         if option in ("-h", "--help"):
             print("initialize a new experiment: run interface.py with no args")
-            print("continue experiments based on the archive: interface.py -l[--load] \"YYYY-MM-DD_hh-mm\"")
+            print(
+                "continue experiments based on the archive: interface.py -l[--load] \"YYYY-MM-DD_hh-mm\"")
         if option in ("-l", "--load"):
             load = True
             datetime = value
@@ -141,6 +149,7 @@ def main(argv):
         learn.init()
     learn.train()
     learn.plot_best_cost_list()
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])

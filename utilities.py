@@ -120,6 +120,31 @@ def get_predict_good_params_set(min_boundary, max_boundary, window_params_set, p
     return params_set
 
 
+def get_predict_random_params_set(min_boundary, max_boundary, window_params_set, predict_params_set_size, gaussian_ratio, gaussian_sigma):
+    num_params = len(min_boundary)
+    num_gaussian = int(gaussian_ratio * predict_params_set_size)
+    num_uniform = int(predict_params_set_size - num_gaussian)
+    num_window = len(window_params_set)
+    num_gaussian_scale = int(np.ceil(num_gaussian / num_window))
+
+    gaussian_loc = np.array([window_params_set for _ in range(
+        num_gaussian_scale)]).reshape((num_window*num_gaussian_scale, -1))
+    gaussian_loc = gaussian_loc[0:num_gaussian]
+    gaussian_scale = gaussian_sigma * \
+        (np.array(max_boundary) - np.array(min_boundary))
+    gaussian_params_set = np.random.normal(
+        gaussian_loc, gaussian_scale, (num_gaussian, num_params))
+    cond = gaussian_params_set >= min_boundary
+    gaussian_params_set = np.where(cond, gaussian_params_set, min_boundary)
+    cond = gaussian_params_set <= max_boundary
+    gaussian_params_set = np.where(cond, gaussian_params_set, max_boundary)
+
+    uniform_params_set = np.random.uniform(
+        min_boundary, max_boundary, (num_uniform, num_params))
+    params_set = np.vstack((gaussian_params_set, uniform_params_set))
+    return params_set
+
+
 def get_remotest_params(min_boundary, max_boundary, train_params_set):
     num_params = len(min_boundary)
     # 对参数集合在每个维度上独立排序
@@ -132,10 +157,12 @@ def get_remotest_params(min_boundary, max_boundary, train_params_set):
     max_diff_indexs = np.argmax(params_diff, axis=0)
     # 做一点扰动
     cond = np.random.rand() < 0.8
-    max_diff_indexs = np.where(cond, max_diff_indexs, np.random.randint(0, len(params_diff)))
+    max_diff_indexs = np.where(
+        cond, max_diff_indexs, np.random.randint(0, len(params_diff)))
     # 计算最大间隔中的参数
     low_indexs = (tuple(max_diff_indexs), tuple(i for i in range(num_params)))
-    high_indexs = (tuple(max_diff_indexs + 1), tuple(i for i in range(num_params)))
+    high_indexs = (tuple(max_diff_indexs + 1),
+                   tuple(i for i in range(num_params)))
     remotest_params = (params_sort[high_indexs] - params_sort[low_indexs]) / 2
-    
+
     return remotest_params

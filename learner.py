@@ -28,13 +28,14 @@ class Learner():
 
         # 训练参数
         self.initial_params_set_size = interface.initial_params_set_size
-        self.predict_good_params_set_size = interface.predict_good_params_set_size
+        self.predict_params_set_size = interface.predict_params_set_size
         self.test_good_params_set_size = interface.test_good_params_set_size
         self.extra_remotest_params_set_size = interface.extra_remotest_params_set_size
         self.window_size = interface.window_size
         self.max_num_iteration = interface.max_num_iteration
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 1
+        self.gaussian_ratio = 0.5
         self.gaussian_sigma = 0.03
 
         # 训练文件
@@ -190,17 +191,18 @@ class Learner():
                          self.train_costs_set,
                          self.max_epoch)
             # Step2: 产生预测参数并预测结果
-            predict_good_params_set = utilities.get_predict_good_params_set(self.min_boundary,
-                                                                            self.max_boundary,
-                                                                            self.window_params_set,
-                                                                            self.predict_good_params_set_size,
-                                                                            self.gaussian_sigma)
+            predict_params_set = utilities.get_predict_random_params_set(self.min_boundary,
+                                                                         self.max_boundary,
+                                                                         self.window_params_set,
+                                                                         self.predict_params_set_size,
+                                                                         self.gaussian_ratio,
+                                                                         self.gaussian_sigma)
             predict_costs_set = np.array(
-                self.net.predict_costs(predict_good_params_set)).flatten()
+                self.net.predict_costs(predict_params_set)).flatten()
             # Step3: 选出下一次实验的参数
             indexes = np.argsort(predict_costs_set)
             subsequent_params_set = np.array(
-                predict_good_params_set[indexes[:self.test_good_params_set_size]])
+                predict_params_set[indexes[:self.test_good_params_set_size]])
             for _ in range(self.extra_remotest_params_set_size):
                 remotest_params = utilities.get_remotest_params(self.min_boundary,
                                                                 self.max_boundary,
