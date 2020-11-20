@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import utilities
 import learner
+import simulation
 
 
 class Interface():
@@ -124,7 +125,19 @@ class Interface():
             else:
                 costs = np.hstack((costs, 1000.0))
         return costs
-
+    
+    def get_experiment_costs_simulation(self, params_set):
+        costs = np.array([], dtype=float)
+        for params in params_set:
+            wave = utilities.waveform(
+                self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
+            omega_r_0 = 13135.56
+            omega_z_0 = 99.86535
+            omega_r = omega_r_0 * np.sqrt(wave / wave[0])
+            omega_z = omega_z_0 * np.sqrt(wave / wave[0])
+            cost = simulation.calculate_temperature(wave, omega_r, omega_z, self.sample_rate)
+            costs = np.hstack((costs, cost))
+        return costs
 
 def main(argv):
     try:
