@@ -103,6 +103,7 @@ class Learner():
             loss = self.net.get_loss(
                 self.window_params_set, self.window_costs_set)
             if loss < best_loss:
+                self.reset_net = True
                 best_loss = loss
                 best_weights = self.net.get_weights()
         self.net.set_weights(best_weights)
@@ -232,9 +233,8 @@ class Learner():
                          self.window_costs_set)
             val_loss = self.net.get_loss(
                 self.window_params_set, self.window_costs_set)
-            reset_net = False
+            self.reset_net = False
             if val_loss > self.last_val_loss:
-                reset_net = True
                 self.reset_neural_net()
             self.last_val_loss = val_loss
 
@@ -360,7 +360,7 @@ class Learner():
                 print("The best cost is given by select_random_params_set")
             # print(self.window_params_set)
             print(self.window_costs_set)
-            if reset_net:
+            if self.reset_net:
                 print("The neural net have been reset")
             # weights = self.net.get_weights()
             # for j in range(len(weights)):
