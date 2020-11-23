@@ -236,6 +236,7 @@ class Learner():
             if val_loss > self.last_val_loss:
                 reset_net = True
                 self.reset_neural_net()
+            self.last_val_loss = val_loss
 
             # Step2: 产生预测参数并预测结果
             predict_good_params_sets = []
