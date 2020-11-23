@@ -2,13 +2,14 @@ import os
 import datetime
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 
 def get_dict_from_file(filename):
     '''
     Method for getting a dictionary from a file, of a given format. 
 
-    Args:    
+    Args:
         filename (str): The filename for the file.
 
     Returns:
@@ -30,22 +31,6 @@ def get_dict_from_file(filename):
     nan = float('nan')
     tdict = eval('dict(' + tdict_string + ')')
     return tdict
-
-
-def waveform(startpoint, endpoint, tf, sample_rate, params):
-    num_params = len(params)
-    a_1 = endpoint / startpoint - 1 - np.sum(params)
-    coef = np.hstack((a_1, params))
-    l = int((num_params + 1) / 2)
-    t_step = 1.0 / sample_rate
-    t = np.array(np.arange(0, tf, t_step)) / tf
-    wave = np.ones(len(t))
-    for i in range(l):
-        wave = wave + coef[i] * np.power(t, i+1) + \
-            coef[l+i] * np.power(t, 1/float(i+2))
-    wave = startpoint * wave
-    return wave
-
 
 def save_params_to_file(filename, params):
     dirname = os.path.dirname(filename)
@@ -92,6 +77,38 @@ def save_dict_to_txt_file(tdict, filename):
                 str(key) + '=' + repr(tdict[key]).replace('\n', '').replace('\r', '') + '\n')
         out_file.close()
 
+def waveform(startpoint, endpoint, tf, sample_rate, params):
+    num_params = len(params)
+    a_1 = endpoint / startpoint - 1 - np.sum(params)
+    coef = np.hstack((a_1, params))
+    l = int((num_params + 1) / 2)
+    t_step = 1.0 / sample_rate
+    t = np.array(np.arange(0, tf, t_step)) / tf
+    wave = np.ones(len(t))
+    for i in range(l):
+        wave = wave + coef[i] * np.power(t, i+1) + \
+            coef[l+i] * np.power(t, 1/float(i+2))
+    wave = startpoint * wave
+    return wave
+
+def plot_wave(startpoint, endpoint, tf, sample_rate, params):
+    num_params = len(params)
+    a_1 = endpoint / startpoint - 1 - np.sum(params)
+    coef = np.hstack((a_1, params))
+    l = int((num_params + 1) / 2)
+    t_step = 1.0 / sample_rate
+    t = np.array(np.arange(0, tf, t_step)) / tf
+    wave = np.ones(len(t))
+    for i in range(l):
+        wave = wave + coef[i] * np.power(t, i+1) + \
+            coef[l+i] * np.power(t, 1/float(i+2))
+    wave = startpoint * wave
+
+    plt.xlabel("Wave")
+    plt.ylabel("t")
+    plt.plot(t, wave)
+    plt.show()
+
 
 def get_init_params(min_boundary, max_boundary, initial_params_set_size):
     num_params = len(min_boundary)
@@ -100,48 +117,22 @@ def get_init_params(min_boundary, max_boundary, initial_params_set_size):
     return params_set
 
 
-def get_predict_good_params_set(min_boundary, max_boundary, window_params_set, predict_params_set_size, gaussian_sigma):
+def get_predict_good_params_set(min_boundary, max_boundary, base_params, predict_params_set_size, std_dev):
     num_params = len(min_boundary)
-    num_window = len(window_params_set)
-    num_repeat_window = int(np.ceil(predict_params_set_size / num_window))
-
-    gaussian_loc = np.array([window_params_set for _ in range(
-        num_repeat_window)]).reshape((num_window*num_repeat_window, -1))
-    gaussian_loc = gaussian_loc[0:predict_params_set_size]
-    gaussian_scale = gaussian_sigma * \
-        (np.array(max_boundary) - np.array(min_boundary))
+    std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))
     params_set = np.random.normal(
-        gaussian_loc, gaussian_scale, (predict_params_set_size, num_params))
+        base_params, std_dev_scale, (predict_params_set_size, num_params))
     cond = params_set >= min_boundary
     params_set = np.where(cond, params_set, min_boundary)
     cond = params_set <= max_boundary
     params_set = np.where(cond, params_set, max_boundary)
-
     return params_set
 
 
-def get_predict_random_params_set(min_boundary, max_boundary, window_params_set, predict_params_set_size, gaussian_ratio, gaussian_sigma):
+def get_predict_random_params_set(min_boundary, max_boundary, predict_params_set_size):
     num_params = len(min_boundary)
-    num_gaussian = int(gaussian_ratio * predict_params_set_size)
-    num_uniform = int(predict_params_set_size - num_gaussian)
-    num_window = len(window_params_set)
-    num_gaussian_scale = int(np.ceil(num_gaussian / num_window))
-
-    gaussian_loc = np.array([window_params_set for _ in range(
-        num_gaussian_scale)]).reshape((num_window*num_gaussian_scale, -1))
-    gaussian_loc = gaussian_loc[0:num_gaussian]
-    gaussian_scale = gaussian_sigma * \
-        (np.array(max_boundary) - np.array(min_boundary))
-    gaussian_params_set = np.random.normal(
-        gaussian_loc, gaussian_scale, (num_gaussian, num_params))
-    cond = gaussian_params_set >= min_boundary
-    gaussian_params_set = np.where(cond, gaussian_params_set, min_boundary)
-    cond = gaussian_params_set <= max_boundary
-    gaussian_params_set = np.where(cond, gaussian_params_set, max_boundary)
-
-    uniform_params_set = np.random.uniform(
-        min_boundary, max_boundary, (num_uniform, num_params))
-    params_set = np.vstack((gaussian_params_set, uniform_params_set))
+    params_set = np.random.uniform(
+        min_boundary, max_boundary, (predict_params_set_size, num_params))
     return params_set
 
 
@@ -166,3 +157,7 @@ def get_remotest_params(min_boundary, max_boundary, train_params_set):
     remotest_params = (params_sort[high_indexs] - params_sort[low_indexs]) / 2
 
     return remotest_params
+
+if __name__ == '__main__':
+    params = np.array([-0.58550424, -1.52075839,  1.80660292, -0.96438512, -1.41168059,  1.72655946, -0.64034469])
+    plot_wave(10, 0, 15.71, 5000, params)

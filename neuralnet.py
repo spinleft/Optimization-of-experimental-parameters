@@ -27,9 +27,6 @@ class NeuralNet():
         self.start_datetime = start_datetime
         self.neural_net_file_prefix = 'neural_net_archive_'
 
-    def destroy(self):
-        pass
-
     def init(self,
              num_params,
              layer_dims,
@@ -119,6 +116,19 @@ class NeuralNet():
     def predict_costs(self, params):
         return np.array(self.model.predict(params, verbose=0, use_multiprocessing=True))
 
+    def reset_weights(self):
+        for layer in self.model.layers:
+            for k, initializer in layer.__dict__.items():
+                if "initializer" not in k:
+                    continue
+                var = getattr(layer, k.replace("_initializer", ""))
+                var.assign(initializer(var.shape, var.dtype))
+    
+    def get_weights(self):
+        return self.model.get_weights()
+
+    def set_weights(self, weights):
+        self.model.set_weights(weights)
 
 def gelu(x):
     return 0.5 * x * (1 + tf.tanh(tf.sqrt(2 / np.pi) * (x + 0.044715 * tf.pow(x, 3))))

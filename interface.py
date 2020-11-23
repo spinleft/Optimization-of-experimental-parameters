@@ -20,13 +20,13 @@ class Interface():
         self.sample_rate = 5000
 
         # 训练参数
-        self.initial_params_set_size = 10
-        self.predict_params_set_size = 100000
-        self.test_good_params_set_size = 10
-        self.extra_remotest_params_set_size = 5
-        self.window_size = 50
+        self.initial_params_set_size = 20
+        self.predict_good_params_set_size = 1000
+        self.predict_random_params_set_size = 10000
+        self.select_random_params_set_size = 20
+        self.window_size = 10
         self.max_num_iteration = 100
-        self.save_params_set_size = 10
+        self.save_params_set_size = 20
 
         # 实验文件参数
         self.wave_dir = "./waves"
