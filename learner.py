@@ -19,8 +19,8 @@ class Learner():
 
         # 神经网络超参数
         self.layer_dims = [64] * 5
-        # 神经网络的loss下降小于train_threshold_ratio若干次时，停止训练
-        self.train_threshold_ratio = 0.0
+        # 神经网络的val_loss下降小于train_threshold_ratio若干次时，停止训练
+        self.train_threshold_ratio = 0.01
         self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
@@ -104,6 +104,7 @@ class Learner():
             loss = self.net.get_loss(
                 self.window_params_set, self.window_costs_set)
             if loss < best_loss:
+                print("Better loss found...")
                 best_loss = loss
                 best_weights = self.net.get_weights()
         self.net.set_weights(best_weights)
