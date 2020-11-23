@@ -159,5 +159,5 @@ def get_remotest_params(min_boundary, max_boundary, train_params_set):
     return remotest_params
 
 if __name__ == '__main__':
-    params = np.array([-0.58550424, -1.52075839,  1.80660292, -0.96438512, -1.41168059,  1.72655946, -0.64034469])
+    params = np.array([-2.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
     plot_wave(10, 0, 15.71, 5000, params)

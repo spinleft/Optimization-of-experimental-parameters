@@ -20,7 +20,7 @@ class Learner():
         # 神经网络超参数
         self.layer_dims = [64] * 5
         # 神经网络的loss下降小于train_threshold_ratio若干次时，停止训练
-        self.train_threshold_ratio = 0.01
+        self.train_threshold_ratio = 0.0
         self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
@@ -35,6 +35,7 @@ class Learner():
         self.max_num_iteration = interface.max_num_iteration
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 10
+        self.reset_net_weight_num = 20
         self.std_dev = 0.03
 
         # 训练文件
@@ -76,7 +77,9 @@ class Learner():
             self.net.reset_weights()
             self.net.fit(self.train_params_set,
                     self.train_costs_set,
-                    self.max_epoch)
+                    self.max_epoch,
+                    self.window_params_set,
+                    self.window_costs_set)
             loss = self.net.get_loss(self.window_params_set, self.window_costs_set)
             if loss < best_loss:
                 best_loss = loss
@@ -86,8 +89,10 @@ class Learner():
 
     def reset_neural_net(self):
         # 随机初始化网络多次，选择在窗口参数上 loss 最小的权重
-        best_loss = float('inf')
+        best_loss = self.net.get_loss()
+        best_weights = self.net.get_weights()
         for _ in range(self.init_net_weight_num):
+            self.net.reset_weights()
             self.net.fit(self.train_params_set,
                     self.train_costs_set,
                     self.max_epoch)
@@ -95,32 +100,38 @@ class Learner():
             if loss < best_loss:
                 best_loss = loss
                 best_weights = self.net.get_weights()
-            self.net.reset_weights()
         self.net.set_weights(best_weights)
 
     def init(self):
         # 随机产生一组参数，获取实验结果
-        self.train_params_set = utilities.get_init_params(
+        self.init_params_set = utilities.get_init_params(
             self.min_boundary, self.max_boundary, self.initial_params_set_size)
-        self.train_costs_set = self.interface.get_experiment_costs(
-            self.train_params_set)
+        self.init_costs_set = self.interface.get_experiment_costs(
+            self.init_params_set)
 
         # 将全部或部分最好的参数放入窗口
-        self.window_params_set = self.train_params_set
-        self.window_costs_set = self.train_costs_set
-        if self.window_size < len(self.window_costs_set):
-            indexes = np.argsort(self.window_costs_set)
-            self.window_params_set = self.window_params_set[indexes[:self.window_size]]
-            self.window_costs_set = self.window_costs_set[indexes[:self.window_size]]
+        # self.window_params_set = self.train_params_set
+        # self.window_costs_set = self.train_costs_set
+        # if self.window_size < len(self.window_costs_set):
+        #     indexes = np.argsort(self.window_costs_set)
+        #     self.window_params_set = self.window_params_set[indexes[:self.window_size]]
+        #     self.window_costs_set = self.window_costs_set[indexes[:self.window_size]]
+
+        # 筛选好的参数放入窗口
+        indexes = np.argsort(self.init_costs_set)
+        self.window_params_set = self.init_params_set[indexes[:self.window_size]]
+        self.window_costs_set = self.init_costs_set[indexes[:self.window_size]]
+        self.train_params_set = self.init_params_set[indexes[self.window_size:]]
+        self.train_costs_set = self.init_costs_set[indexes[self.window_size:]]
 
         # 随机初始化神经网络，选择训练后 loss 最小的网络
-        print("Initializing.")
+        print("Initializing...")
         self.initialize_neural_net()
 
         # 记录初始化的最好参数和结果
-        index = np.argmin(self.train_costs_set)
-        self.best_params = self.train_params_set[index]
-        self.best_cost = self.train_costs_set[index]
+        index = np.argmin(self.window_costs_set)
+        self.best_params = self.window_params_set[index]
+        self.best_cost = self.window_costs_set[index]
         # 新建记录列表
         self.best_params_list = np.array([self.best_params], dtype=float)
         self.best_costs_list = np.array([self.best_cost], dtype=float)
@@ -139,7 +150,7 @@ class Learner():
             self.archive_dir, self.archive_file_prefix+start_datetime+'.txt')
         # 从存档中读取参数
         self.archive = utilities.get_dict_from_file(load_archive_filename)
-        print("Loading.")
+        print("Loading...")
         # 实验参数
         num_params = int(self.archive['num_params'])
         if self.num_params is not None and self.num_params != num_params:
@@ -206,11 +217,13 @@ class Learner():
     def train(self):
 
         for i in range(self.last_iteration + 1, self.last_iteration + 1 + self.max_num_iteration):
-            print("Iteration %d." % i)
+            print("Iteration %d..." % i)
             # Step1: 训练神经网络
             self.net.fit(self.train_params_set,
                          self.train_costs_set,
-                         self.max_epoch)
+                         self.max_epoch,
+                         self.window_params_set,
+                         self.window_costs_set)
 
             # Step2: 产生预测参数并预测结果
             predict_good_params_sets = []
@@ -248,34 +261,49 @@ class Learner():
                 select_good_params_set)
             select_random_costs_set = self.interface.get_experiment_costs(
                 select_random_params_set)
-            self.train_params_set = np.vstack(
-                (self.train_params_set, select_good_params_set, select_random_params_set))
-            self.train_costs_set = np.hstack(
-                (self.train_costs_set, select_good_costs_set, select_random_costs_set))
+            # self.train_params_set = np.vstack(
+            #     (self.train_params_set, select_good_params_set, select_random_params_set))
+            # self.train_costs_set = np.hstack(
+            #     (self.train_costs_set, select_good_costs_set, select_random_costs_set))
 
             # 更新窗口
-            cond = select_good_costs_set < self.window_costs_set
-            self.window_params_set = np.where(
-                cond.reshape(-1, 1), select_good_params_set, self.window_params_set)
-            self.window_costs_set = np.where(
-                cond, select_good_costs_set, self.window_costs_set)
+            # cond = select_good_costs_set < self.window_costs_set
+            # self.window_params_set = np.where(
+            #     cond.reshape(-1, 1), select_good_params_set, self.window_params_set)
+            # self.window_costs_set = np.where(
+            #     cond, select_good_costs_set, self.window_costs_set)
+
+            # 将 select_good_params_set 替换入 window_params_set 或 放入 train_params_set
+            for j in range(len(select_good_params_set)):
+                if select_good_costs_set[j] < self.window_costs_set[j]:
+                    self.train_params_set = np.vstack((self.train_params_set, self.window_params_set[j]))
+                    self.train_costs_set = np.hstack((self.train_costs_set, self.window_costs_set[j]))
+                    self.window_params_set[j] = select_good_params_set[j]
+                    self.window_costs_set[j] = select_good_costs_set[j]
+                else:
+                    self.train_params_set = np.vstack((self.train_params_set, select_good_params_set[j]))
+                    self.train_costs_set = np.hstack((self.train_costs_set, select_good_costs_set[j]))
             for j in range(len(select_random_params_set)):
+                insert_into_window = False
                 for k in range(len(self.window_params_set)):
                     distance = np.abs(select_random_params_set[j] - self.window_params_set[k]) / (
                         self.max_boundary - self.min_boundary)
-                    if (distance < self.std_dev).all():
-                        if select_random_costs_set[j] < self.window_costs_set[k]:
-                            self.window_params_set[k] = select_random_params_set[j]
-                            self.window_costs_set[k] = select_random_costs_set[j]
+                    if (distance < self.std_dev).all() and select_random_costs_set[j] < self.window_costs_set[k]:
+                        insert_into_window = True
+                        self.train_params_set = np.vstack((self.train_params_set, self.window_params_set[k]))
+                        self.train_costs_set = np.hstack((self.train_costs_set, self.window_costs_set[k]))
+                        self.window_params_set[k] = select_random_params_set[j]
+                        self.window_costs_set[k] = select_random_costs_set[j]
                         break
-                    else:
-                        self.window_params_set = np.vstack(
-                            (self.window_params_set, select_random_params_set[j]))
-                        self.window_costs_set = np.hstack(
-                            (self.window_costs_set, select_random_costs_set[j]))
-                        break
+                if insert_into_window == False:
+                    self.window_params_set = np.vstack(
+                        (self.window_params_set, select_random_params_set[j]))
+                    self.window_costs_set = np.hstack(
+                        (self.window_costs_set, select_random_costs_set[j]))
             if self.window_size < len(self.window_costs_set):
                 indexes = np.argsort(self.window_costs_set)
+                self.train_params_set = np.vstack((self.train_params_set, self.window_params_set[indexes[self.window_size:]]))
+                self.train_costs_set = np.hstack((self.train_costs_set, self.window_costs_set[indexes[self.window_size:]]))
                 self.window_params_set = self.window_params_set[indexes[:self.window_size]]
                 self.window_costs_set = self.window_costs_set[indexes[:self.window_size]]
 

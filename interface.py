@@ -20,11 +20,11 @@ class Interface():
         self.sample_rate = 5000
 
         # 训练参数
-        self.initial_params_set_size = 20
-        self.predict_good_params_set_size = 1000
-        self.predict_random_params_set_size = 10000
-        self.select_random_params_set_size = 20
-        self.window_size = 10
+        self.initial_params_set_size = 40
+        self.predict_good_params_set_size = 10000
+        self.predict_random_params_set_size = 100000
+        self.select_random_params_set_size = 10
+        self.window_size = 6
         self.max_num_iteration = 100
         self.save_params_set_size = 20
 
@@ -161,7 +161,7 @@ def main(argv):
     else:
         learn.init()
     learn.train()
-    learn.plot_best_cost_list()
+    learn.plot_best_costs_list()
 
 
 if __name__ == '__main__':
