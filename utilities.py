@@ -6,15 +6,6 @@ import matplotlib.pyplot as plt
 
 
 def get_dict_from_file(filename):
-    '''
-    Method for getting a dictionary from a file, of a given format. 
-
-    Args:
-        filename (str): The filename for the file.
-
-    Returns:
-        dict : Dictionary of values in file.
-    '''
     dirname = os.path.dirname(filename)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
@@ -31,6 +22,7 @@ def get_dict_from_file(filename):
     nan = float('nan')
     tdict = eval('dict(' + tdict_string + ')')
     return tdict
+
 
 def save_params_to_file(filename, params):
     dirname = os.path.dirname(filename)
@@ -64,18 +56,12 @@ def get_datetime_now_string():
 
 
 def save_dict_to_txt_file(tdict, filename):
-    '''
-    Method for writing a dict to a file with syntax similar to how files are input.
-
-    Args:
-        tdict (dict): Dictionary to be written to file.
-        filename (string): Filename for file. 
-    '''
     with open(filename, 'w') as out_file:
         for key in tdict:
             out_file.write(
                 str(key) + '=' + repr(tdict[key]).replace('\n', '').replace('\r', '') + '\n')
         out_file.close()
+
 
 def waveform(startpoint, endpoint, tf, sample_rate, params):
     num_params = len(params)
@@ -104,37 +90,42 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
             coef[l+i] * np.power(t, 1/float(i+2))
     wave = startpoint * wave
 
-    plt.xlabel("Wave")
-    plt.ylabel("t")
+    plt.xlabel("t")
+    plt.ylabel("wave")
     plt.plot(t, wave)
     plt.show()
 
 
-def get_init_params(min_boundary, max_boundary, initial_params_set_size):
-    num_params = len(min_boundary)
-    params_set = np.random.uniform(
-        min_boundary, max_boundary, (initial_params_set_size, num_params))
+def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoint, endpoint, tf, sample_rate):
+    randomstate = np.random.RandomState(seed=None)
+    for i in range(params_set_size):
+        flag = True
+        while flag:
+            params = randomstate.uniform(min_boundary, max_boundary)
+            wave = waveform(startpoint, endpoint, tf, sample_rate, params)
+            if (wave <= 10.0).all() and (wave > -1.0).all():
+                params_set = params if (i == 0) else np.vstack(
+                    (params_set, params))
+                flag = False
     return params_set
 
-
-def get_predict_good_params_set(min_boundary, max_boundary, base_params, predict_params_set_size, std_dev):
-    num_params = len(min_boundary)
+def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size, startpoint, endpoint, tf, sample_rate):
+    randomstate = np.random.RandomState(seed=None)
     std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))
-    params_set = np.random.normal(
-        base_params, std_dev_scale, (predict_params_set_size, num_params))
-    cond = params_set >= min_boundary
-    params_set = np.where(cond, params_set, min_boundary)
-    cond = params_set <= max_boundary
-    params_set = np.where(cond, params_set, max_boundary)
+    for i in range(params_set_size):
+        flag = True
+        while flag:
+            params = randomstate.normal(base_params, std_dev_scale)
+            cond = params >= min_boundary
+            params = np.where(cond, params, min_boundary)
+            cond = params <= max_boundary
+            params = np.where(cond, params, max_boundary)
+            wave = waveform(startpoint, endpoint, tf, sample_rate, params)
+            if (wave <= 10.0).all() and (wave > -1.0).all():
+                params_set = params if (i == 0) else np.vstack(
+                    (params_set, params))
+                flag = False
     return params_set
-
-
-def get_predict_random_params_set(min_boundary, max_boundary, predict_params_set_size):
-    num_params = len(min_boundary)
-    params_set = np.random.uniform(
-        min_boundary, max_boundary, (predict_params_set_size, num_params))
-    return params_set
-
 
 def get_remotest_params(min_boundary, max_boundary, train_params_set):
     num_params = len(min_boundary)
@@ -158,6 +149,9 @@ def get_remotest_params(min_boundary, max_boundary, train_params_set):
 
     return remotest_params
 
+
 if __name__ == '__main__':
-    params = np.array([-2.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
+    # params = np.array([-2.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
+    # params = np.array([-1.15722878, -0.51218646, 1.07800144, -2.35206841, 0.85351334, -0.1725775, -0.012383])   # 0.064683930185784
+    params = np.array([0.38210958, 0.2968994, 0.01810535, -0.41816894, 0.937224, -1.50701797, 0.66145263])
     plot_wave(10, 0, 15.71, 5000, params)

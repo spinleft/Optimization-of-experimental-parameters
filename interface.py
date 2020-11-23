@@ -20,11 +20,11 @@ class Interface():
         self.sample_rate = 5000
 
         # 训练参数
-        self.initial_params_set_size = 40
-        self.predict_good_params_set_size = 10000
-        self.predict_random_params_set_size = 100000
+        self.initial_params_set_size = 20
+        self.predict_good_params_set_size = 100
+        self.predict_random_params_set_size = 1000
         self.select_random_params_set_size = 10
-        self.window_size = 6
+        self.window_size = 10
         self.max_num_iteration = 100
         self.save_params_set_size = 20
 
@@ -125,7 +125,7 @@ class Interface():
             else:
                 costs = np.hstack((costs, 1000.0))
         return costs
-    
+
     def get_experiment_costs_simulation(self, params_set):
         costs = np.array([], dtype=float)
         for params in params_set:
@@ -135,9 +135,11 @@ class Interface():
             omega_z_0 = 99.86535
             omega_r = omega_r_0 * np.sqrt(wave / wave[0])
             omega_z = omega_z_0 * np.sqrt(wave / wave[0])
-            cost = simulation.calculate_temperature(wave, omega_r, omega_z, self.sample_rate)
+            cost = simulation.calculate_temperature(
+                wave, omega_r, omega_z, self.sample_rate)
             costs = np.hstack((costs, cost))
         return costs
+
 
 def main(argv):
     try:
@@ -162,7 +164,6 @@ def main(argv):
         learn.init()
     learn.train()
     learn.plot_best_costs_list()
-
 
 if __name__ == '__main__':
     main(sys.argv[1:])
