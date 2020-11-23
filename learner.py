@@ -62,25 +62,26 @@ class Learner():
     def initialize_neural_net(self):
         # 新建神经网络
         self.net = neuralnet.NeuralNet(self.min_boundary,
-                                  self.max_boundary,
-                                  archive_dir=self.archive_dir,
-                                  start_datetime=self.start_datetime)
+                                       self.max_boundary,
+                                       archive_dir=self.archive_dir,
+                                       start_datetime=self.start_datetime)
         self.net.init(self.num_params,
-                 self.layer_dims,
-                 self.train_threshold_ratio,
-                 self.batch_size,
-                 self.dropout_prob,
-                 self.regularisation_coefficient)
+                      self.layer_dims,
+                      self.train_threshold_ratio,
+                      self.batch_size,
+                      self.dropout_prob,
+                      self.regularisation_coefficient)
         # 随机初始化网络多次，选择在窗口参数上 loss 最小的权重
         best_loss = float('inf')
         for _ in range(self.init_net_weight_num):
             self.net.reset_weights()
             self.net.fit(self.train_params_set,
-                    self.train_costs_set,
-                    self.max_epoch,
-                    self.window_params_set,
-                    self.window_costs_set)
-            loss = self.net.get_loss(self.window_params_set, self.window_costs_set)
+                         self.train_costs_set,
+                         self.max_epoch,
+                         self.window_params_set,
+                         self.window_costs_set)
+            loss = self.net.get_loss(
+                self.window_params_set, self.window_costs_set)
             if loss < best_loss:
                 best_loss = loss
                 best_weights = self.net.get_weights()
@@ -89,14 +90,18 @@ class Learner():
 
     def reset_neural_net(self):
         # 随机初始化网络多次，选择在窗口参数上 loss 最小的权重
-        best_loss = self.net.get_loss()
+        best_loss = self.net.get_loss(
+            self.window_params_set, self.window_costs_set)
         best_weights = self.net.get_weights()
         for _ in range(self.init_net_weight_num):
             self.net.reset_weights()
             self.net.fit(self.train_params_set,
-                    self.train_costs_set,
-                    self.max_epoch)
-            loss = self.net.get_loss(self.window_params_set, self.window_costs_set)
+                         self.train_costs_set,
+                         self.max_epoch,
+                         self.window_params_set,
+                         self.window_costs_set)
+            loss = self.net.get_loss(
+                self.window_params_set, self.window_costs_set)
             if loss < best_loss:
                 best_loss = loss
                 best_weights = self.net.get_weights()
@@ -127,6 +132,7 @@ class Learner():
         # 随机初始化神经网络，选择训练后 loss 最小的网络
         print("Initializing...")
         self.initialize_neural_net()
+        self.last_val_loss = float('inf')
 
         # 记录初始化的最好参数和结果
         index = np.argmin(self.window_costs_set)
@@ -224,6 +230,12 @@ class Learner():
                          self.max_epoch,
                          self.window_params_set,
                          self.window_costs_set)
+            val_loss = self.net.get_loss(
+                self.window_params_set, self.window_costs_set)
+            reset_net = False
+            if val_loss > self.last_val_loss:
+                reset_net = True
+                self.reset_neural_net()
 
             # Step2: 产生预测参数并预测结果
             predict_good_params_sets = []
@@ -276,13 +288,17 @@ class Learner():
             # 将 select_good_params_set 替换入 window_params_set 或 放入 train_params_set
             for j in range(len(select_good_params_set)):
                 if select_good_costs_set[j] < self.window_costs_set[j]:
-                    self.train_params_set = np.vstack((self.train_params_set, self.window_params_set[j]))
-                    self.train_costs_set = np.hstack((self.train_costs_set, self.window_costs_set[j]))
+                    self.train_params_set = np.vstack(
+                        (self.train_params_set, self.window_params_set[j]))
+                    self.train_costs_set = np.hstack(
+                        (self.train_costs_set, self.window_costs_set[j]))
                     self.window_params_set[j] = select_good_params_set[j]
                     self.window_costs_set[j] = select_good_costs_set[j]
                 else:
-                    self.train_params_set = np.vstack((self.train_params_set, select_good_params_set[j]))
-                    self.train_costs_set = np.hstack((self.train_costs_set, select_good_costs_set[j]))
+                    self.train_params_set = np.vstack(
+                        (self.train_params_set, select_good_params_set[j]))
+                    self.train_costs_set = np.hstack(
+                        (self.train_costs_set, select_good_costs_set[j]))
             for j in range(len(select_random_params_set)):
                 insert_into_window = False
                 for k in range(len(self.window_params_set)):
@@ -290,8 +306,10 @@ class Learner():
                         self.max_boundary - self.min_boundary)
                     if (distance < self.std_dev).all() and select_random_costs_set[j] < self.window_costs_set[k]:
                         insert_into_window = True
-                        self.train_params_set = np.vstack((self.train_params_set, self.window_params_set[k]))
-                        self.train_costs_set = np.hstack((self.train_costs_set, self.window_costs_set[k]))
+                        self.train_params_set = np.vstack(
+                            (self.train_params_set, self.window_params_set[k]))
+                        self.train_costs_set = np.hstack(
+                            (self.train_costs_set, self.window_costs_set[k]))
                         self.window_params_set[k] = select_random_params_set[j]
                         self.window_costs_set[k] = select_random_costs_set[j]
                         break
@@ -302,8 +320,10 @@ class Learner():
                         (self.window_costs_set, select_random_costs_set[j]))
             if self.window_size < len(self.window_costs_set):
                 indexes = np.argsort(self.window_costs_set)
-                self.train_params_set = np.vstack((self.train_params_set, self.window_params_set[indexes[self.window_size:]]))
-                self.train_costs_set = np.hstack((self.train_costs_set, self.window_costs_set[indexes[self.window_size:]]))
+                self.train_params_set = np.vstack(
+                    (self.train_params_set, self.window_params_set[indexes[self.window_size:]]))
+                self.train_costs_set = np.hstack(
+                    (self.train_costs_set, self.window_costs_set[indexes[self.window_size:]]))
                 self.window_params_set = self.window_params_set[indexes[:self.window_size]]
                 self.window_costs_set = self.window_costs_set[indexes[:self.window_size]]
 
@@ -339,13 +359,17 @@ class Learner():
                 print("The best cost is given by select_random_params_set")
             # print(self.window_params_set)
             print(self.window_costs_set)
-            weights = self.net.get_weights()
-            for j in range(len(weights)):
-                weights[j] = weights[j].flatten()
-                self.last_neural_net_weight[j] = self.last_neural_net_weight[j].flatten()
-            delta_weights = abs(np.hstack(tuple(weights)) - np.hstack(tuple(self.last_neural_net_weight)))
-            self.last_neural_net_weight = self.net.get_weights()
-            print(np.sum(delta_weights))
+            if reset_net:
+                print("The neural net have been reset")
+            # weights = self.net.get_weights()
+            # for j in range(len(weights)):
+            #     weights[j] = weights[j].flatten()
+            #     self.last_neural_net_weight[j] = self.last_neural_net_weight[j].flatten(
+            #     )
+            # delta_weights = abs(np.hstack(tuple(weights)) -
+            #                     np.hstack(tuple(self.last_neural_net_weight)))
+            # self.last_neural_net_weight = self.net.get_weights()
+            # print(np.sum(delta_weights))
 
         print("The best parameters: " + str(self.best_params))
         print("The best cost: " + str(self.best_cost))
