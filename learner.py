@@ -36,7 +36,8 @@ class Learner():
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 10
         self.reset_net_weight_num = 20
-        self.std_dev = 0.03
+        self.reset_net_weight_patience = 10
+        self.std_dev = 0.02
 
         # 训练文件
         self.archive_dir = interface.archive_dir
@@ -103,7 +104,6 @@ class Learner():
             loss = self.net.get_loss(
                 self.window_params_set, self.window_costs_set)
             if loss < best_loss:
-                self.reset_net = True
                 best_loss = loss
                 best_weights = self.net.get_weights()
         self.net.set_weights(best_weights)
@@ -143,6 +143,7 @@ class Learner():
         self.best_params_list = np.array([self.best_params], dtype=float)
         self.best_costs_list = np.array([self.best_cost], dtype=float)
         self.last_iteration = 0
+        self.last_reset_net_iteration = 0
         # 记入档案
         self.archive.update({'best_params_list': self.best_params_list,
                              'best_costs_list': self.best_cost,
@@ -208,6 +209,7 @@ class Learner():
         indexes = np.argsort(self.train_costs_set)
         self.best_params = self.train_params_set[indexes[0]]
         self.best_cost = self.train_costs_set[indexes[0]]
+        #
         # 记入记录列表
         self.best_params_list = np.vstack(
             (self.best_params_list, self.best_params))
@@ -231,12 +233,6 @@ class Learner():
                          self.max_epoch,
                          self.window_params_set,
                          self.window_costs_set)
-            val_loss = self.net.get_loss(
-                self.window_params_set, self.window_costs_set)
-            self.reset_net = False
-            if val_loss > self.last_val_loss:
-                self.reset_neural_net()
-            self.last_val_loss = val_loss
 
             # Step2: 产生预测参数并预测结果
             predict_good_params_sets = []
@@ -286,7 +282,7 @@ class Learner():
             # self.window_costs_set = np.where(
             #     cond, select_good_costs_set, self.window_costs_set)
 
-            # 将 select_good_params_set 替换入 window_params_set 或 放入 train_params_set
+            # 将 select_good_params_set 替换入 window_params_set 或放入 train_params_set
             for j in range(len(select_good_params_set)):
                 if select_good_costs_set[j] < self.window_costs_set[j]:
                     self.train_params_set = np.vstack(
@@ -345,6 +341,10 @@ class Learner():
                 (self.best_params_list, iteration_best_params))
             self.best_costs_list = np.hstack(
                 (self.best_costs_list, iteration_best_cost))
+            # best_cost 长时间不下降时，重置网络权重
+            if (i - self.last_reset_net_iteration >= self.reset_net_weight_patience) and (self.best_cost not in self.best_costs_list[-self.reset_net_weight_patience:]):
+                self.reset_neural_net()
+                self.last_reset_net_iteration = i
             # 更新档案
             self.archive.update({'best_params_list': self.best_params_list,
                                  'best_costs_list': self.best_costs_list,
@@ -360,8 +360,6 @@ class Learner():
                 print("The best cost is given by select_random_params_set")
             # print(self.window_params_set)
             print(self.window_costs_set)
-            if self.reset_net:
-                print("The neural net have been reset")
             # weights = self.net.get_weights()
             # for j in range(len(weights)):
             #     weights[j] = weights[j].flatten()
