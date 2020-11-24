@@ -11,13 +11,13 @@ class Interface():
     def __init__(self):
         # 实验参数
         self.target_cost = 0
-        self.num_params = 7
-        self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
-        self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
-        self.startpoint = 10.0
-        self.endpoint = 0.0
+        self.num_params = 8
+        self.min_boundary = [-3., -3., -3., -3., -3., -3., -3., 2.]
+        self.max_boundary = [3., 3., 3., 3., 3., 3., 3., 5.]
+        self.startpoint = 4.2644e-28
+        self.endpoint = 4.2644e-28 / 25
         self.tf = 15.71
-        self.sample_rate = 5000
+        self.sample_rate = 200
 
         # 训练参数
         self.initial_params_set_size = 20
@@ -42,7 +42,7 @@ class Interface():
         self.load_archive_datetime = None
 
     def get_experiment_costs(self, params_set):
-        return self.get_experiment_costs_test(params_set)
+        return self.get_experiment_costs_simulation(params_set)
 
     def get_experiment_costs_vapor(self, params_set):
         costs = np.array([], dtype=float)
@@ -130,7 +130,7 @@ class Interface():
         costs = np.array([], dtype=float)
         for params in params_set:
             wave = utilities.waveform(
-                self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
+                self.startpoint, self.endpoint, params[-1], self.sample_rate, params[:-1])
             omega_r_0 = 13135.56
             omega_z_0 = 99.86535
             omega_r = omega_r_0 * np.sqrt(wave / wave[0])

@@ -21,11 +21,6 @@ def calculate_temperature(K_wave, omega_r, omega_z, sample_rate):
     for i in range(len(K_wave)-1):
         density_of_state_scale = 1 / (hbar**3 * omega_r[i]**2 * omega_z[i])
         beta, mu = calculate_beta_and_mu(N, E, K_wave[i], beta, mu, density_of_state_scale)
-
-        E_F = (6 * N)**(1/3) * hbar * (omega_r[i]**2 * omega_z[i])**(1/3)
-        T_over_TF = 1 / (beta * E_F)
-        print("T/T_F = %f"%T_over_TF)
-
         dN_1 = calculate_dN_1(K_wave[i], beta, mu, density_of_state_scale)[0] * dt * m * sigma / (np.pi**2 * hbar**3)
         dE_1 = calculate_dE_1(K_wave[i], beta, mu, density_of_state_scale)[0] * dt * m * sigma / (np.pi**2 * hbar**3)
         dN_2 = gamma * N * dt
@@ -42,7 +37,7 @@ def calculate_temperature(K_wave, omega_r, omega_z, sample_rate):
     beta, _ = calculate_beta_and_mu(N, E, K_wave[-1], beta, mu, density_of_state_scale)
     E_F = (6 * N)**(1/3) * hbar * (omega_r[-1]**2 * omega_z[-1])**(1/3)
     T_over_TF = 1 / (beta * E_F)
-    print("T/T_F = %f"%T_over_TF)
+    print("N = %f, T/T_F = %f"%(N, T_over_TF))
     return T_over_TF
 
 def N_kernel(x, beta, mu, density_of_state_scale):
@@ -183,13 +178,13 @@ def main():
     omega_z_0 = 99.86535
 
     sample_rate = 200
-    t_step = 1 / sample_rate
-    t = np.arange(0., 3.21, t_step)
-    params = np.array([-2.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
-    utilities.waveform(K_0, K_0 / 25, 3.21, sample_rate, params)
-    K_wave = K_0 * np.exp(-t)
-    omega_r = omega_r_0 * np.sqrt(np.exp(-t))
-    omega_z = omega_z_0 * np.sqrt(np.exp(-t))
+    # t_step = 1 / sample_rate
+    # t = np.arange(0., 3.21, t_step)
+    params = np.array([-4.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
+    K_wave = utilities.waveform(K_0, K_0 / 25, 3.21, sample_rate, params)
+    # K_wave = K_0 * np.exp(-t)
+    omega_r = omega_r_0 * np.sqrt(K_wave / K_wave[0])
+    omega_z = omega_z_0 * np.sqrt(K_wave / K_wave[0])
     calculate_temperature(K_wave, omega_r, omega_z, sample_rate)
 
 def calculate_N_E():

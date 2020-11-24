@@ -21,7 +21,7 @@ class Learner():
         self.max_boundary = np.array(interface.max_boundary)
         self.startpoint = interface.startpoint
         self.endpoint = interface.endpoint
-        self.tf = interface.tf
+        # self.tf = interface.tf
         self.sample_rate = interface.sample_rate
 
         # 神经网络超参数
@@ -58,7 +58,7 @@ class Learner():
                         'max_boundary': self.max_boundary,
                         'startpoint': self.startpoint,
                         'endpoint': self.endpoint,
-                        'tf': self.tf,
+                        # 'tf': self.tf,
                         'sample_rate': self.sample_rate,
                         'layer_dims': self.layer_dims,
                         'train_threshold_ratio': self.train_threshold_ratio,
@@ -198,12 +198,12 @@ class Learner():
             raise ValueError
         else:
             self.endpoint = endpoint
-        tf = np.array(self.archive['tf'])   # 波形总时间
-        if self.tf is not None and (self.tf != tf):
-            print("self.tf != tf")
-            raise ValueError
-        else:
-            self.tf = tf
+        # tf = np.array(self.archive['tf'])   # 波形总时间
+        # if self.tf is not None and (self.tf != tf):
+        #     print("self.tf != tf")
+        #     raise ValueError
+        # else:
+        #     self.tf = tf
         sample_rate = np.array(self.archive['sample_rate'])   # 波形采样率
         if self.sample_rate is not None and (self.sample_rate != sample_rate):
             print("self.sample_rate != sample_rate")
@@ -398,7 +398,7 @@ class Learner():
             params_set_size,
             self.startpoint,
             self.endpoint,
-            self.tf,
+            # self.tf,
             self.sample_rate
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
@@ -420,7 +420,7 @@ class Learner():
             params_set_size,
             self.startpoint,
             self.endpoint,
-            self.tf,
+            # self.tf,
             self.sample_rate
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
@@ -440,7 +440,7 @@ class Learner():
             params_set_size,
             self.startpoint,
             self.endpoint,
-            self.tf,
+            # self.tf,
             self.sample_rate
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
