@@ -72,7 +72,7 @@ class Learner():
             n_clusters=self.save_params_set_size, max_iter=1000)
         
         # 创建进程池
-        self.pool = multiprocessing.Pool(processes=3)
+        self.pool = multiprocessing.Pool(processes=5)
 
     def initialize_neural_net(self):
         # 新建神经网络
@@ -383,7 +383,7 @@ class Learner():
         self._save_archive()
 
     def get_init_params(self):
-        num_cores = int(os.cpu_count())
+        num_cores = int(5)
         block_size = int(self.initial_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.initial_params_set_size - block_size * (num_cores - 1)]
@@ -405,7 +405,7 @@ class Learner():
         return params_set
 
     def get_predict_good_params_set(self, base_params):
-        num_cores = int(os.cpu_count())
+        num_cores = int(5)
         block_size = int(self.predict_good_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.predict_good_params_set_size - block_size * (num_cores - 1)]
@@ -429,7 +429,7 @@ class Learner():
         return params_set
     
     def get_predict_random_params_set(self):
-        num_cores = int(os.cpu_count())
+        num_cores = int(5)
         block_size = int(self.predict_random_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.predict_random_params_set_size - block_size * (num_cores - 1)]
