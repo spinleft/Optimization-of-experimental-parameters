@@ -451,7 +451,7 @@ class Learner():
         return params_set
     
     def get_experiment_costs(self, params_set):
-        multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(params,)) for params in params_set]
+        multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(np.array([params]),)) for params in params_set]
         costs_list = [result.get() for result in multiple_results]
         costs = np.array(costs_list).reshape(-1,)
         return costs
