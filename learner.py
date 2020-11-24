@@ -72,7 +72,7 @@ class Learner():
             n_clusters=self.save_params_set_size, max_iter=1000)
         
         # 创建进程池
-        self.pool = multiprocessing.Pool(processes=os.cpu_count())
+        self.pool = multiprocessing.Pool(processes=5)
 
     def initialize_neural_net(self):
         # 新建神经网络
@@ -450,7 +450,7 @@ class Learner():
             params_set = np.vstack((params_set, params_set_list[i]))
         return params_set
     
-    def get_experiment_costs(params_set):
+    def get_experiment_costs(self, params_set):
         multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(params,)) for params in params_set]
         costs_list = [result.get() for result in multiple_results]
         costs = np.array(costs_list).reshape(-1,)

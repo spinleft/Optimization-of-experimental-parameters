@@ -21,8 +21,8 @@ class Interface():
 
         # 训练参数
         self.initial_params_set_size = 20
-        self.predict_good_params_set_size = 100
-        self.predict_random_params_set_size = 1000
+        self.predict_good_params_set_size = 10
+        self.predict_random_params_set_size = 20
         self.select_random_params_set_size = 10
         self.window_size = 10
         self.max_num_iteration = 100
