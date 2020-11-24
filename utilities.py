@@ -97,11 +97,11 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
 
 
 def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoint, endpoint, tf, sample_rate):
-    randomstate = np.random.RandomState(seed=None)
+    rng = np.random.default_rng()
     for i in range(params_set_size):
         flag = True
         while flag:
-            params = randomstate.uniform(min_boundary, max_boundary)
+            params = rng.uniform(min_boundary, max_boundary)
             wave = waveform(startpoint, endpoint, tf, sample_rate, params)
             if (wave <= 10.0).all() and (wave > -1.0).all():
                 params_set = params if (i == 0) else np.vstack(
@@ -110,12 +110,12 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoin
     return params_set
 
 def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size, startpoint, endpoint, tf, sample_rate):
-    randomstate = np.random.RandomState(seed=None)
+    rng = np.random.default_rng()
     std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))
     for i in range(params_set_size):
         flag = True
         while flag:
-            params = randomstate.normal(base_params, std_dev_scale)
+            params = rng.normal(base_params, std_dev_scale)
             cond = params >= min_boundary
             params = np.where(cond, params, min_boundary)
             cond = params <= max_boundary
