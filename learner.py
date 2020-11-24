@@ -408,21 +408,20 @@ class Learner():
         block_size = int(self.predict_good_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.predict_good_params_set_size - block_size * (num_cores - 1)]
-        with multiprocessing.Pool(processes=num_cores) as pool:
-            multiple_results = [pool.apply_async(utilities.get_normal_params_set, args=(
-                self.min_boundary,
-                self.max_boundary,
-                base_params,
-                self.std_dev,
-                params_set_size,
-                self.startpoint,
-                self.endpoint,
-                self.tf,
-                self.sample_rate
-            )) for params_set_size in blocks]
-            params_set_list = []
-            for result in multiple_results:
-                params_set_list.append(result.get())
+        multiple_results = [self.pool.apply_async(utilities.get_normal_params_set, args=(
+            self.min_boundary,
+            self.max_boundary,
+            base_params,
+            self.std_dev,
+            params_set_size,
+            self.startpoint,
+            self.endpoint,
+            self.tf,
+            self.sample_rate
+        )) for params_set_size in blocks]
+        params_set_list = []
+        for result in multiple_results:
+            params_set_list.append(result.get())
         params_set = params_set_list[0]
         for i in range(1, num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
