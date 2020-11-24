@@ -416,7 +416,7 @@ class Learner():
                         self.tf,
                         self.sample_rate
                     )) for params_set_size in blocks]
-                    params_set_list = [params_set_block.get()
+                    params_set_list = [params_set_block.get(timeout=60)
                                     for params_set_block in params_set_blocks]
                     break
                 except TimeoutError:
@@ -445,7 +445,7 @@ class Learner():
                         self.tf,
                         self.sample_rate
                     )) for params_set_size in blocks]
-                    params_set_list = [params_set_block.get()
+                    params_set_list = [params_set_block.get(timeout=60)
                                     for params_set_block in params_set_blocks]
                     break
                 except TimeoutError:
