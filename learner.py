@@ -72,7 +72,7 @@ class Learner():
             n_clusters=self.save_params_set_size, max_iter=1000)
         
         # 创建进程池
-        self.pool = multiprocessing.Pool(processes=5)
+        self.pool = multiprocessing.Pool(processes=3)
 
     def initialize_neural_net(self):
         # 新建神经网络

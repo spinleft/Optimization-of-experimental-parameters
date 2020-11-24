@@ -104,8 +104,7 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoin
             params = rng.uniform(min_boundary, max_boundary)
             wave = waveform(startpoint, endpoint, tf, sample_rate, params)
             if (wave <= 10.0).all() and (wave > -1.0).all():
-                params_set = params if (i == 0) else np.vstack(
-                    (params_set, params))
+                params_set = np.array([params]) if (i == 0) else np.vstack((params_set, params))
                 flag = False
     return params_set
 
@@ -122,8 +121,7 @@ def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, para
             params = np.where(cond, params, max_boundary)
             wave = waveform(startpoint, endpoint, tf, sample_rate, params)
             if (wave <= 10.0).all() and (wave > -1.0).all():
-                params_set = params if (i == 0) else np.vstack(
-                    (params_set, params))
+                params_set = np.array([params]) if (i == 0) else np.vstack((params_set, params))
                 flag = False
     return params_set
 
