@@ -178,11 +178,11 @@ def main():
     omega_z_0 = 99.86535
 
     sample_rate = 200
-    # t_step = 1 / sample_rate
-    # t = np.arange(0., 3.21, t_step)
-    params = np.array([-4.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
-    K_wave = utilities.waveform(K_0, K_0 / 25, 3.21, sample_rate, params)
-    # K_wave = K_0 * np.exp(-t)
+    t_step = 1 / sample_rate
+    t = np.arange(0., 6.44, t_step)
+    # params = np.array([-4.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
+    # K_wave = utilities.waveform(K_0, K_0 / 25, 3.21, sample_rate, params)
+    K_wave = K_0 * np.exp(-t/2)
     omega_r = omega_r_0 * np.sqrt(K_wave / K_wave[0])
     omega_z = omega_z_0 * np.sqrt(K_wave / K_wave[0])
     calculate_temperature(K_wave, omega_r, omega_z, sample_rate)
