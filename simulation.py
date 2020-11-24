@@ -2,6 +2,7 @@ import numpy as np
 from scipy import optimize
 from scipy import integrate
 from scipy import constants
+import utilities
 
 def calculate_temperature(K_wave, omega_r, omega_z, sample_rate):
     dt = 1. / sample_rate
@@ -18,9 +19,13 @@ def calculate_temperature(K_wave, omega_r, omega_z, sample_rate):
     gamma = 1 / 1000
 
     for i in range(len(K_wave)-1):
-        print(i)
         density_of_state_scale = 1 / (hbar**3 * omega_r[i]**2 * omega_z[i])
         beta, mu = calculate_beta_and_mu(N, E, K_wave[i], beta, mu, density_of_state_scale)
+
+        E_F = (6 * N)**(1/3) * hbar * (omega_r[i]**2 * omega_z[i])**(1/3)
+        T_over_TF = 1 / (beta * E_F)
+        print("T/T_F = %f"%T_over_TF)
+
         dN_1 = calculate_dN_1(K_wave[i], beta, mu, density_of_state_scale)[0] * dt * m * sigma / (np.pi**2 * hbar**3)
         dE_1 = calculate_dE_1(K_wave[i], beta, mu, density_of_state_scale)[0] * dt * m * sigma / (np.pi**2 * hbar**3)
         dN_2 = gamma * N * dt
@@ -180,6 +185,8 @@ def main():
     sample_rate = 200
     t_step = 1 / sample_rate
     t = np.arange(0., 3.21, t_step)
+    params = np.array([-2.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
+    utilities.waveform(K_0, K_0 / 25, 3.21, sample_rate, params)
     K_wave = K_0 * np.exp(-t)
     omega_r = omega_r_0 * np.sqrt(np.exp(-t))
     omega_z = omega_z_0 * np.sqrt(np.exp(-t))
@@ -190,10 +197,9 @@ def calculate_N_E():
     kB = constants.Boltzmann
     T = 10e-6
     K_0 = 4.2644e-28
-    omega_x_0 = 13135.56
-    omega_y_0 = 13135.56
+    omega_r_0 = 13135.56
     omega_z_0 = 99.86535
-    density_of_state_scale = 1 / (hbar**3 * omega_x_0 * omega_y_0 * omega_z_0)
+    density_of_state_scale = 1 / (hbar**3 * omega_r_0**2 * omega_z_0)
     beta = 1 / (kB * T)
     mu = -3e-28
 

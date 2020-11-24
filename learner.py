@@ -256,6 +256,10 @@ class Learner():
                              'last_iteration': self.last_iteration,
                              'last_reset_net_iteration': self.last_reset_net_iteration})
         # self._save_archive()
+    
+    def close(self):
+        self.pool.close()
+        self.pool.join()
 
     def train(self):
 
@@ -397,9 +401,7 @@ class Learner():
             self.tf,
             self.sample_rate
         )) for params_set_size in blocks]
-        params_set_list = []
-        for result in multiple_results:
-            params_set_list.append(result.get())
+        params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
         for i in range(1, num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
@@ -421,12 +423,7 @@ class Learner():
             self.tf,
             self.sample_rate
         )) for params_set_size in blocks]
-        params_set_list = []
-        i = 0
-        for result in multiple_results:
-            print(i)
-            i += 1
-            params_set_list.append(result.get())
+        params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
         for i in range(1, num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
@@ -446,9 +443,7 @@ class Learner():
             self.tf,
             self.sample_rate
         )) for params_set_size in blocks]
-        params_set_list = []
-        for result in multiple_results:
-            params_set_list.append(result.get())
+        params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
         for i in range(1, num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
