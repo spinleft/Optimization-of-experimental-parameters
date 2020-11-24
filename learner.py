@@ -55,6 +55,10 @@ class Learner():
         self.archive = {'num_params': self.num_params,
                         'min_boundary': self.min_boundary,
                         'max_boundary': self.max_boundary,
+                        'startpoint': self.startpoint,
+                        'endpoint': self.endpoint,
+                        'tf': self.tf,
+                        'sample_rate': self.sample_rate,
                         'layer_dims': self.layer_dims,
                         'train_threshold_ratio': self.train_threshold_ratio,
                         'batch_size': self.batch_size,
@@ -162,24 +166,48 @@ class Learner():
         self.archive = utilities.get_dict_from_file(load_archive_filename)
         print("Loading...")
         # 实验参数
-        num_params = int(self.archive['num_params'])
+        num_params = int(self.archive['num_params'])    # 参数数量
         if self.num_params is not None and self.num_params != num_params:
             print("self.num_params != num_params")
             raise ValueError
         else:
             self.num_params = num_params
-        min_boundary = np.array(self.archive['min_boundary'])
+        min_boundary = np.array(self.archive['min_boundary'])   # 参数下界
         if self.min_boundary is not None and (self.min_boundary != min_boundary).any():
             print("self.min_boundary != min_boundary")
             raise ValueError
         else:
             self.min_boundary = min_boundary
-        max_boundary = np.array(self.archive['max_boundary'])
+        max_boundary = np.array(self.archive['max_boundary'])   # 参数上界
         if self.max_boundary is not None and (self.max_boundary != max_boundary).any():
             print("self.max_boundary != max_boundary")
             raise ValueError
         else:
             self.max_boundary = max_boundary
+        startpoint = np.array(self.archive['startpoint'])   # 波形起始点
+        if self.startpoint is not None and (self.startpoint != startpoint):
+            print("self.startpoint != startpoint")
+            raise ValueError
+        else:
+            self.startpoint = startpoint
+        endpoint = np.array(self.archive['endpoint'])   # 波形终止点
+        if self.endpoint is not None and (self.endpoint != endpoint):
+            print("self.endpoint != endpoint")
+            raise ValueError
+        else:
+            self.endpoint = endpoint
+        tf = np.array(self.archive['tf'])   # 波形总时间
+        if self.tf is not None and (self.tf != tf):
+            print("self.tf != tf")
+            raise ValueError
+        else:
+            self.tf = tf
+        sample_rate = np.array(self.archive['sample_rate'])   # 波形采样率
+        if self.sample_rate is not None and (self.sample_rate != sample_rate):
+            print("self.sample_rate != sample_rate")
+            raise ValueError
+        else:
+            self.sample_rate = sample_rate
         # 实验记录
         self.best_params = self.archive['best_params']
         self.best_cost = self.archive['best_cost']
@@ -210,9 +238,9 @@ class Learner():
         self.train_costs_set = self.init_costs_set[indexes[self.window_size:]]
 
         # 记录典型参数中的最好参数和结果
-        indexes = np.argsort(self.window_costs_set)
-        self.best_params = self.window_params_set[indexes[0]]
-        self.best_cost = self.window_costs_set[indexes[0]]
+        index = np.argmin(self.window_costs_set)
+        self.best_params = self.window_params_set[index]
+        self.best_cost = self.window_costs_set[index]
         # 记入记录列表
         self.best_params_list = np.vstack(
             (self.best_params_list, self.best_params))
@@ -358,14 +386,14 @@ class Learner():
                                  'last_iteration': i,
                                  'last_reset_net_iteration': self.last_reset_net_iteration})
             # self._save_archive()
-            print("The best params in iteration" + str(i) +
+            finish = time.time()
+            print("Record time: %f"%(finish - start))
+            print("The best params in iteration " + str(i) +
                   " is: " + str(iteration_best_params))
             print("The best cost in iteration " + str(i) +
                   " is: " + str(iteration_best_cost))
             print("window_cost_set:")
             print(self.window_costs_set)
-            finish = time.time()
-            print("Record time: %f"%(finish - start))
 
         print("The best parameters: " + str(self.best_params))
         print("The best cost: " + str(self.best_cost))
@@ -388,9 +416,9 @@ class Learner():
             )) for params_set_size in blocks]
             params_set_list = [params_set_block.get()
                                for params_set_block in params_set_blocks]
-            params_set = params_set_list[0]
-            for i in range(1, num_cores):
-                params_set = np.vstack((params_set, params_set_list[i]))
+        params_set = params_set_list[0]
+        for i in range(1, num_cores):
+            params_set = np.vstack((params_set, params_set_list[i]))
         return params_set
 
     def get_predict_good_params_set(self, base_params):
@@ -412,9 +440,9 @@ class Learner():
             )) for params_set_size in blocks]
             params_set_list = [params_set_block.get()
                                for params_set_block in params_set_blocks]
-            params_set = params_set_list[0]
-            for i in range(1, num_cores):
-                params_set = np.vstack((params_set, params_set_list[i]))
+        params_set = params_set_list[0]
+        for i in range(1, num_cores):
+            params_set = np.vstack((params_set, params_set_list[i]))
         return params_set
     
     def get_predict_random_params_set(self):
@@ -434,9 +462,9 @@ class Learner():
             )) for params_set_size in blocks]
             params_set_list = [params_set_block.get()
                                for params_set_block in params_set_blocks]
-            params_set = params_set_list[0]
-            for i in range(1, num_cores):
-                params_set = np.vstack((params_set, params_set_list[i]))
+        params_set = params_set_list[0]
+        for i in range(1, num_cores):
+            params_set = np.vstack((params_set, params_set_list[i]))
         return params_set
 
     def _save_archive(self):
