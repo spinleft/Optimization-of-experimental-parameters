@@ -404,54 +404,45 @@ class Learner():
         block_size = int(self.initial_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.initial_params_set_size - block_size * (num_cores - 1)]
-        print(blocks)
         with multiprocessing.Pool(processes=num_cores) as pool:
-            while True:
-                try:
-                    params_set_blocks = [pool.apply_async(utilities.get_random_params_set, args=(
-                        self.min_boundary,
-                        self.max_boundary,
-                        params_set_size,
-                        self.startpoint,
-                        self.endpoint,
-                        self.tf,
-                        self.sample_rate
-                    )) for params_set_size in blocks]
-                    params_set_list = [params_set_block.get(timeout=60)
-                                    for params_set_block in params_set_blocks]
-                    break
-                except TimeoutError:
-                    print("get_init_params() time out, trying again...")
+            multiple_results = [pool.apply_async(utilities.get_random_params_set, args=(
+                self.min_boundary,
+                self.max_boundary,
+                params_set_size,
+                self.startpoint,
+                self.endpoint,
+                self.tf,
+                self.sample_rate
+            )) for params_set_size in blocks]
+            params_set_list = []
+            for result in multiple_results:
+                params_set_list.append(result.get())
         params_set = params_set_list[0]
         for i in range(1, num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
         return params_set
 
     def get_predict_good_params_set(self, base_params):
+        print(base_params)
         num_cores = int(multiprocessing.cpu_count())
         block_size = int(self.predict_good_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.predict_good_params_set_size - block_size * (num_cores - 1)]
-        print(blocks)
         with multiprocessing.Pool(processes=num_cores) as pool:
-            while True:
-                try:
-                    params_set_blocks = [pool.apply_async(utilities.get_normal_params_set, args=(
-                        self.min_boundary,
-                        self.max_boundary,
-                        base_params,
-                        self.std_dev,
-                        params_set_size,
-                        self.startpoint,
-                        self.endpoint,
-                        self.tf,
-                        self.sample_rate
-                    )) for params_set_size in blocks]
-                    params_set_list = [params_set_block.get(timeout=120)
-                                    for params_set_block in params_set_blocks]
-                    break
-                except TimeoutError:
-                    print("get_predict_good_params_set() time out, trying again...")
+            multiple_results = [pool.apply_async(utilities.get_normal_params_set, args=(
+                self.min_boundary,
+                self.max_boundary,
+                base_params,
+                self.std_dev,
+                params_set_size,
+                self.startpoint,
+                self.endpoint,
+                self.tf,
+                self.sample_rate
+            )) for params_set_size in blocks]
+            params_set_list = []
+            for result in multiple_results:
+                params_set_list.append(result.get())
         params_set = params_set_list[0]
         for i in range(1, num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
@@ -462,24 +453,19 @@ class Learner():
         block_size = int(self.predict_random_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.predict_random_params_set_size - block_size * (num_cores - 1)]
-        print(blocks)
         with multiprocessing.Pool(processes=num_cores) as pool:
-            while True:
-                try:
-                    params_set_blocks = [pool.apply_async(utilities.get_random_params_set, args=(
-                        self.min_boundary,
-                        self.max_boundary,
-                        params_set_size,
-                        self.startpoint,
-                        self.endpoint,
-                        self.tf,
-                        self.sample_rate
-                    )) for params_set_size in blocks]
-                    params_set_list = [params_set_block.get(timeout=60)
-                                    for params_set_block in params_set_blocks]
-                    break
-                except TimeoutError:
-                    print("get_predict_random_params_set() time out, trying again...")
+            multiple_results = [pool.apply_async(utilities.get_random_params_set, args=(
+                self.min_boundary,
+                self.max_boundary,
+                params_set_size,
+                self.startpoint,
+                self.endpoint,
+                self.tf,
+                self.sample_rate
+            )) for params_set_size in blocks]
+            params_set_list = []
+            for result in multiple_results:
+                params_set_list.append(result.get())
         params_set = params_set_list[0]
         for i in range(1, num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
