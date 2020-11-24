@@ -8,6 +8,7 @@ import neuralnet
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import multiprocessing
+from multiprocessing import TimeoutError
 
 
 class Learner():
@@ -125,7 +126,7 @@ class Learner():
     def init(self):
         # 随机产生一组参数，获取实验结果
         self.init_params_set = self.get_init_params()
-        self.init_costs_set = self.interface.get_experiment_costs(
+        self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
 
         # 筛选好的参数放入窗口
@@ -227,7 +228,7 @@ class Learner():
         self.net.load(self.archive, load_neural_net_archive_filename)
         # 读取上次保存的典型参数，获取实验结果
         self.init_params_set = np.array(self.archive['save_params_set'])
-        self.init_costs_set = self.interface.get_experiment_costs(
+        self.init_costs_set = self.get_experiment_costs(
             self.train_params_set)
 
         # 筛选好的参数放入窗口
@@ -293,9 +294,9 @@ class Learner():
                 predict_random_params_set[indexes[:self.select_random_params_set_size]])
 
             # Step4: 获取实验结果
-            select_good_costs_set = self.interface.get_experiment_costs(
+            select_good_costs_set = self.get_experiment_costs(
                 select_good_params_set)
-            select_random_costs_set = self.interface.get_experiment_costs(
+            select_random_costs_set = self.get_experiment_costs(
                 select_random_params_set)
 
             # 将select_good_params_set替换入window_params_set或放入train_params_set
@@ -382,7 +383,7 @@ class Learner():
         self._save_archive()
 
     def get_init_params(self):
-        num_cores = int(multiprocessing.cpu_count())
+        num_cores = int(os.cpu_count())
         block_size = int(self.initial_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.initial_params_set_size - block_size * (num_cores - 1)]
@@ -404,7 +405,7 @@ class Learner():
         return params_set
 
     def get_predict_good_params_set(self, base_params):
-        num_cores = int(multiprocessing.cpu_count())
+        num_cores = int(os.cpu_count())
         block_size = int(self.predict_good_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.predict_good_params_set_size - block_size * (num_cores - 1)]
@@ -428,7 +429,7 @@ class Learner():
         return params_set
     
     def get_predict_random_params_set(self):
-        num_cores = int(multiprocessing.cpu_count())
+        num_cores = int(os.cpu_count())
         block_size = int(self.predict_random_params_set_size / num_cores)
         blocks = [block_size] * (num_cores - 1) + \
             [self.predict_random_params_set_size - block_size * (num_cores - 1)]
@@ -448,6 +449,12 @@ class Learner():
         for i in range(1, num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
         return params_set
+    
+    def get_experiment_costs(params_set):
+        multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(params,)) for params in params_set]
+        costs_list = [result.get() for result in multiple_results]
+        costs = np.array(costs_list).reshape(-1,)
+        return costs
 
     def _save_archive(self):
         save_params_set = None
