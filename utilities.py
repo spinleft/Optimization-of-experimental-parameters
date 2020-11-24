@@ -110,11 +110,13 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoin
     return params_set
 
 def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size, startpoint, endpoint, tf, sample_rate):
+    pid = os.getpid()
     rng = np.random.default_rng()
     std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))
     for i in range(params_set_size):
         flag = True
         while flag:
+            print(pid)
             params = rng.normal(base_params, std_dev_scale)
             cond = params >= min_boundary
             params = np.where(cond, params, min_boundary)
