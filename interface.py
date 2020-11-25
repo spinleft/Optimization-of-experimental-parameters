@@ -13,7 +13,7 @@ class Interface():
         self.target_cost = 0
         self.num_params = 8
         self.min_boundary = [-3., -3., -3., -3., -3., -3., -3., 2.]
-        self.max_boundary = [3., 3., 3., 3., 3., 3., 3., 5.]
+        self.max_boundary = [3., 3., 3., 3., 3., 3., 3., 6.]
         self.startpoint = 4.2644e-28
         self.endpoint = 4.2644e-28 / 25
         self.tf = 15.71
@@ -21,8 +21,8 @@ class Interface():
 
         # 训练参数
         self.initial_params_set_size = 20
-        self.predict_good_params_set_size = 100
-        self.predict_random_params_set_size = 1000
+        self.predict_good_params_set_size = 200
+        self.predict_random_params_set_size = 2000
         self.select_random_params_set_size = 10
         self.window_size = 10
         self.max_num_iteration = 100

@@ -77,6 +77,7 @@ def waveform(startpoint, endpoint, tf, sample_rate, params):
     wave = startpoint * wave
     return wave
 
+
 def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     num_params = len(params)
     a_1 = endpoint / startpoint - 1 - np.sum(params)
@@ -92,7 +93,7 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
 
     plt.xlabel("t")
     plt.ylabel("wave")
-    plt.plot(t, wave)
+    plt.plot(t * tf, wave)
     plt.show()
 
 
@@ -102,12 +103,15 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoin
         flag = True
         while flag:
             params = rng.uniform(min_boundary, max_boundary)
-            wave = waveform(startpoint, endpoint, params[-1], sample_rate, params[:-1])
+            wave = waveform(startpoint, endpoint,
+                            params[-1], sample_rate, params[:-1])
             wave_diff = np.diff(wave)
-            if np.max(wave) < 1.01 * 4.2644e-28 and np.min(wave) > 4.2644e-28 / 50 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 50:
-                params_set = np.array([params]) if (i == 0) else np.vstack((params_set, params))
+            if np.max(wave) <= 4.2644e-28 and np.min(wave) > 4.2644e-28 / 100 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
+                params_set = np.array([params]) if (
+                    i == 0) else np.vstack((params_set, params))
                 flag = False
     return params_set
+
 
 def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size, startpoint, endpoint, sample_rate):
     rng = np.random.default_rng()
@@ -120,12 +124,15 @@ def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, para
             params = np.where(cond, params, min_boundary)
             cond = params <= max_boundary
             params = np.where(cond, params, max_boundary)
-            wave = waveform(startpoint, endpoint, params[-1], sample_rate, params[:-1])
+            wave = waveform(startpoint, endpoint,
+                            params[-1], sample_rate, params[:-1])
             wave_diff = np.diff(wave)
-            if np.max(wave) < 1.01 * 4.2644e-28 and np.min(wave) > 4.2644e-28 / 50 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 50:
-                params_set = np.array([params]) if (i == 0) else np.vstack((params_set, params))
+            if np.max(wave) <= 4.2644e-28 and np.min(wave) > 4.2644e-28 / 100 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
+                params_set = np.array([params]) if (
+                    i == 0) else np.vstack((params_set, params))
                 flag = False
     return params_set
+
 
 def get_remotest_params(min_boundary, max_boundary, train_params_set):
     num_params = len(min_boundary)
@@ -153,5 +160,8 @@ def get_remotest_params(min_boundary, max_boundary, train_params_set):
 if __name__ == '__main__':
     # params = np.array([-2.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
     # params = np.array([-1.15722878, -0.51218646, 1.07800144, -2.35206841, 0.85351334, -0.1725775, -0.012383])   # 0.064683930185784
-    params = np.array([1.32179176, -1.21398091, 0.74667593, -2.54193118, 2.35885283, -1.54051139, 0.43814302])  # 0.038674916857825536
-    plot_wave(10, 0, 15.71, 5000, params)
+    # params = np.array([1.32179176, -1.21398091, 0.74667593, -2.54193118, 2.35885283, -1.54051139, 0.43814302])  # 0.038674916857825536
+    # params = np.array([0.62040317, 1.1948361, -0.59836405, -0.10365333, -0.79325315, 2.10052768, -1.23012641, 4.14534571])
+    params = np.array([1.94977766, 2.60590206, -2.7299242, -1.60359176, -1.16171635, 2.38431112, -0.98774287, 3.16765493])
+    # params = np.array([-0.5900328, 2.77703416, -1.31402892, 0.19818796, 0.64368691, -2.09109619, 1.1801839, 5.])
+    plot_wave(4.2644e-28, 4.2644e-28 / 25, params[-1], 200, params[:-1])

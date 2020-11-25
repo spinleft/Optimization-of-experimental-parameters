@@ -18,60 +18,91 @@ def calculate_temperature(K_wave, omega_r, omega_z, sample_rate):
     mu = -3e-28
     gamma = 1 / 1000
 
+    beta_list = []
+    mu_list = []
     for i in range(len(K_wave)-1):
-        density_of_state_scale = 1 / (hbar**3 * omega_r[i]**2 * omega_z[i])
-        beta, mu = calculate_beta_and_mu(N, E, K_wave[i], beta, mu, density_of_state_scale)
-        dN_1 = calculate_dN_1(K_wave[i], beta, mu, density_of_state_scale)[0] * dt * m * sigma / (np.pi**2 * hbar**3)
-        dE_1 = calculate_dE_1(K_wave[i], beta, mu, density_of_state_scale)[0] * dt * m * sigma / (np.pi**2 * hbar**3)
+        # 用四点多项式外推下一个beta和mu
+        if i > 3:
+            beta = 3 * beta_list[-1] - 3 * beta_list[-2] + beta_list[-3]
+            mu = 3 * mu_list[-1] - 3 * mu_list[-2] + mu_list[-3]
+        # 使能量无量纲化，取缩放因子为N / E
+        energy_scale = N / E
+        E_scaled = E * energy_scale
+        m_scaled = m * energy_scale
+        hbar_scaled = hbar * energy_scale
+        K_scaled = K_wave[i] * energy_scale
+        beta_scaled = beta / energy_scale
+        mu_scaled = mu * energy_scale
+        density_of_state_scale = 1 / (hbar_scaled**3 * omega_r[i]**2 * omega_z[i])
+        # 牛顿迭代法求解beta和mu
+        # print("t = %e: N = %f, E = %e"%(i * dt, N, E))
+        beta_scaled, mu_scaled = calculate_beta_and_mu(N, E_scaled, K_scaled, beta_scaled, mu_scaled, density_of_state_scale)
+        # 更新带量纲的beta和mu
+        beta = beta_scaled * energy_scale
+        mu = mu_scaled / energy_scale
+        beta_list.append(beta)
+        mu_list.append(mu)
+        # E_F = (6 * N)**(1/3) * hbar * (omega_r[i]**2 * omega_z[i])**(1/3)
+        # T_over_TF = 1 / (beta * E_F)
+        # print("beta = %e, mu = %e, T/T_F = %e"%(beta, mu, T_over_TF))
+        # 计算各部分的N和E损失
+        dN_1 = calculate_dN_1(K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0] * dt * m_scaled * sigma / (np.pi**2 * hbar_scaled**3)
+        dE_1 = calculate_dE_1(K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0] * dt * m_scaled * sigma / (np.pi**2 * hbar_scaled**3)
         dN_2 = gamma * N * dt
-        dE_2 = gamma * E * dt
+        dE_2 = gamma * E_scaled * dt
         if (K_wave[i] - K_wave[i+1]) > 0:
-            dN_3 = calculate_dN_3(K_wave[i+1], K_wave[i], beta, mu, density_of_state_scale)[0]
-            dE_3 = calculate_dE_3(K_wave[i+1], K_wave[i], beta, mu, density_of_state_scale)[0]
+            K_next_scaled = K_wave[i+1] * energy_scale
+            dN_3 = calculate_dN_3(K_next_scaled, K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0]
+            dE_3 = calculate_dE_3(K_next_scaled, K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0]
         else:
             dN_3 = 0
             dE_3 = 0
+        # 更新N和E
         N = N - dN_1 - dN_2 - dN_3
-        E = E - dE_1 - dE_2 - dE_3
-
-    beta, _ = calculate_beta_and_mu(N, E, K_wave[-1], beta, mu, density_of_state_scale)
+        E = E - (dE_1 + dE_2 + dE_3) / energy_scale
+        
+    # 计算最后的T/T_F
     E_F = (6 * N)**(1/3) * hbar * (omega_r[-1]**2 * omega_z[-1])**(1/3)
     T_over_TF = 1 / (beta * E_F)
-    print("N = %f, T/T_F = %f"%(N, T_over_TF))
+    print("N = %f, T/T_F = %e"%(N, T_over_TF))
     return T_over_TF
 
 def N_kernel(x, beta, mu, density_of_state_scale):
-    return 0.5 * density_of_state_scale * x**2 / (1 + np.exp(beta * (x - mu)))
+    return 0.5 * (density_of_state_scale * x**2) / (1 + np.exp(beta * (x - mu)))
 
 def E_kernel(x, beta, mu, density_of_state_scale):
-    return 0.5 * density_of_state_scale * x**3 / (1 + np.exp(beta * (x - mu)))
+    return 0.5 * (density_of_state_scale * x**3) / (1 + np.exp(beta * (x - mu)))
 
 def J_11_kernel(x, beta, mu, density_of_state_scale):
-    return -0.5 * density_of_state_scale * x**2 * (x - mu) / (2 + np.exp(beta * (x - mu) + np.exp(-beta * (x - mu))))
+    return -0.5 * (density_of_state_scale * x**2 * (x - mu)) / (2 + np.exp(beta * (x - mu)) + np.exp(-beta * (x - mu)))
 
 def J_12_kernel(x, beta, mu, density_of_state_scale):
-    return 0.5 * density_of_state_scale * beta * x**2 / (2 + np.exp(beta * (x - mu) + np.exp(-beta * (x - mu))))
+    return 0.5 * (density_of_state_scale * beta * x**2)  / (2 + np.exp(beta * (x - mu)) + np.exp(-beta * (x - mu)))
 
 def J_21_kernel(x, beta, mu, density_of_state_scale):
-    return -0.5 * density_of_state_scale * x**3 * (x - mu) / (2 + np.exp(beta * (x - mu) + np.exp(-beta * (x - mu))))
+    return -0.5 * (density_of_state_scale * x**3 * (x - mu)) / (2 + np.exp(beta * (x - mu)) + np.exp(-beta * (x - mu)))
 
 def J_22_kernel(x, beta, mu, density_of_state_scale):
-    return 0.5 * density_of_state_scale * beta * x**3 / (2 + np.exp(beta * (x - mu) + np.exp(-beta * (x - mu))))
+    return 0.5 * (density_of_state_scale * beta * x**3) / (2 + np.exp(beta * (x - mu)) + np.exp(-beta * (x - mu)))
 
 def N_E_diff(x, N, E, K, density_of_state_scale):
     beta = float(x[0])
     mu = float(x[1])
-    N_diff = integrate.quad(N_kernel, 0, K, args=(beta, mu, density_of_state_scale))[0] - N
-    E_diff = integrate.quad(E_kernel, 0, K, args=(beta, mu, density_of_state_scale))[0] - E
+    lower_limit = min(0, mu + 600 / beta)
+    upper_limit = min(K, mu + 600 / beta)
+    N_diff = integrate.quad(N_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0] - N
+    E_diff = integrate.quad(E_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0] - E
     return [N_diff, E_diff]
 
 def Jacobi(x, N, E, K, density_of_state_scale):
     beta = float(x[0])
     mu = float(x[1])
-    J_11 = integrate.quad(J_11_kernel, 0, K, args=(beta, mu, density_of_state_scale))[0]
-    J_12 = integrate.quad(J_12_kernel, 0, K, args=(beta, mu, density_of_state_scale))[0]
-    J_21 = integrate.quad(J_21_kernel, 0, K, args=(beta, mu, density_of_state_scale))[0]
-    J_22 = integrate.quad(J_22_kernel, 0, K, args=(beta, mu, density_of_state_scale))[0]
+    lower_limit = max(min(0, mu + 600 / beta), mu - 600 / beta)
+    upper_limit = max(min(K, mu + 600 / beta), mu - 600 / beta)
+    J_11 = integrate.quad(J_11_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0]
+    J_12 = integrate.quad(J_12_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0]
+    J_21 = integrate.quad(J_21_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0]
+    J_22 = integrate.quad(J_22_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0]
     return [[J_11, J_12], [J_21, J_22]]
 
 def calculate_beta_and_mu(N, E, K, beta, mu, density_of_state_scale):
@@ -145,44 +176,73 @@ def calculate_E(K, beta, mu, density_of_state_scale):
 #     return partial_mu_E
 
 def dN_1_kernel(z, y, x, beta, mu, density_of_state_scale):
-    return 0.5 * density_of_state_scale * y**2 / (1 + np.exp(beta * (x + y - z - mu))) / (1 + np.exp(beta * (z - mu))) / (1 + np.exp(-beta * (y - mu)))
+    return 0.5 * (density_of_state_scale * y**2) / (1 + np.exp(beta * (x + y - z - mu))) / (1 + np.exp(beta * (z - mu))) / (1 + np.exp(-beta * (y - mu)))
 
 def calculate_dN_1(K, beta, mu, density_of_state_scale):
-    max_y = lambda x: 2 * K - x
-    min_z = lambda x, y: x + y - K
-    return  integrate.tplquad(dN_1_kernel, K, 2 * K, 0, max_y, min_z, K, args=(beta, mu, density_of_state_scale))
+    min_x = min(K, mu + 1800 / beta)
+    max_x = min(2 * K, mu + 1800 / beta)
+    min_y = lambda x: min(max(0, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+    max_y = lambda x: min(max(2 * K - x, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+    min_z = lambda x, y: max(min(x + y - K, mu + 600 / beta), x + y - (mu + 600 / beta))
+    max_z = lambda x, y: max(min(K, mu + 600 / beta), x + y - (mu + 600 / beta))
+    return  integrate.tplquad(dN_1_kernel, min_x, max_x, min_y, max_y, min_z, max_z, args=(beta, mu, density_of_state_scale))
 
 def dE_1_kernel(z, y, x, beta, mu, density_of_state_scale):
-    return 0.5 * density_of_state_scale * x * y**2 / (1 + np.exp(beta * (x + y - z - mu))) / (1 + np.exp(beta * (z - mu))) / (1 + np.exp(-beta * (y - mu)))
+    return 0.5 * (density_of_state_scale * x * y**2) / (1 + np.exp(beta * (x + y - z - mu))) / (1 + np.exp(beta * (z - mu))) / (1 + np.exp(-beta * (y - mu)))
 
 def calculate_dE_1(K, beta, mu, density_of_state_scale):
-    max_y = lambda x: 2 * K - x
-    min_z = lambda x, y: x + y - K
-    return  integrate.tplquad(dE_1_kernel, K, 2 * K, 0, max_y, min_z, K, args=(beta, mu, density_of_state_scale))
+    min_x = min(K, mu + 1800 / beta)
+    max_x = min(2 * K, mu + 1800 / beta)
+    min_y = lambda x: min(max(0, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+    max_y = lambda x: min(max(2 * K - x, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+    min_z = lambda x, y: max(min(x + y - K, mu + 600 / beta), x + y - (mu + 600 / beta))
+    max_z = lambda x, y: max(min(K, mu + 600 / beta), x + y - (mu + 600 / beta))
+    return  integrate.tplquad(dE_1_kernel, min_x, max_x, min_y, max_y, min_z, max_z, args=(beta, mu, density_of_state_scale))
 
 def dN_3_kernel(x, beta, mu, density_of_state_scale):
-    return 0.5 * density_of_state_scale * x**2 / (1 + np.exp(beta * (x - mu)))
+    return 0.5 * (density_of_state_scale * x**2) / (1 + np.exp(beta * (x - mu)))
 
 def calculate_dN_3(K_prime, K, beta, mu, density_of_state_scale):
-    return integrate.quad(dN_3_kernel, K_prime, K, args=(beta, mu, density_of_state_scale))
+    lower_limit = min(K_prime, mu + 600 / beta)
+    upper_limit = min(K, mu + 600 / beta)
+    return integrate.quad(dN_3_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))
 
 def dE_3_kernel(x, beta, mu, density_of_state_scale):
-    return 0.5 * density_of_state_scale * x**3 / (1 + np.exp(beta * (x - mu)))
+    return 0.5 * (density_of_state_scale * x**3) / (1 + np.exp(beta * (x - mu)))
 
 def calculate_dE_3(K_prime, K, beta, mu, density_of_state_scale):
-    return integrate.quad(dE_3_kernel, K_prime, K, args=(beta, mu, density_of_state_scale))
+    lower_limit = min(K_prime, mu + 600 / beta)
+    upper_limit = min(K, mu + 600 / beta)
+    return integrate.quad(dE_3_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))
 
 def main():
     K_0 = 4.2644e-28
     omega_r_0 = 13135.56
     omega_z_0 = 99.86535
 
-    sample_rate = 200
-    t_step = 1 / sample_rate
-    t = np.arange(0., 6.44, t_step)
-    # params = np.array([-4.71779894, 2.65982562, -0.84004817, -2.42029854, -0.011407, 0.64039272, -0.28129203])
-    # K_wave = utilities.waveform(K_0, K_0 / 25, 3.21, sample_rate, params)
-    K_wave = K_0 * np.exp(-t/2)
+    results = []
+    for tf in np.arange(9.0, 20.0, 1.0):
+        sample_rate = 200
+        t_step = 1 / sample_rate
+        t = np.arange(0., tf, t_step)
+        K_wave = K_0 * np.exp(-t * (np.log(25) / tf))
+        omega_r = omega_r_0 * np.sqrt(K_wave / K_wave[0])
+        omega_z = omega_z_0 * np.sqrt(K_wave / K_wave[0])
+        print("tf = %f:"%tf)
+        result = calculate_temperature(K_wave, omega_r, omega_z, sample_rate)
+        results.append(result)
+    print(results)
+
+def test():
+    omega_r_0 = 13135.56
+    omega_z_0 = 99.86535
+
+    sample_rate = 1000
+    params = np.array([1.94977766, 2.60590206, -2.7299242, -1.60359176, -1.16171635, 2.38431112, -0.98774287, 3.16765493])
+    K_wave = utilities.waveform(4.2644e-28, 4.2644e-28 / 25, params[-1], sample_rate, params[:-1])
+    # t_step = 1 / sample_rate
+    # t = np.arange(0., 5, t_step)
+    # K_wave = 4.2644e-28 * np.exp(-t * (np.log(25) / 5))
     omega_r = omega_r_0 * np.sqrt(K_wave / K_wave[0])
     omega_z = omega_z_0 * np.sqrt(K_wave / K_wave[0])
     calculate_temperature(K_wave, omega_r, omega_z, sample_rate)
@@ -191,12 +251,12 @@ def calculate_N_E():
     hbar = constants.hbar
     kB = constants.Boltzmann
     T = 10e-6
-    K_0 = 4.2644e-28
-    omega_r_0 = 13135.56
-    omega_z_0 = 99.86535
+    K_0 = 3.9731758457021166e-29
+    omega_r_0 = 4009.4843113403117
+    omega_z_0 = 30.482792821281258
     density_of_state_scale = 1 / (hbar**3 * omega_r_0**2 * omega_z_0)
-    beta = 1 / (kB * T)
-    mu = -3e-28
+    beta = 2.691140e+31
+    mu = 8.715738e-30
 
     N = calculate_N(K_0, beta, mu, density_of_state_scale)
     E = calculate_E(K_0, beta, mu, density_of_state_scale)
@@ -237,5 +297,37 @@ def calculate_trap():
     print("omega_y = %f"%omega_y)
     print("omega_z = %f"%omega_z)
 
+def gauss_kernel(x):
+    return np.exp(x)
+
+def test1():
+    omega_r_0 = 13135.56
+    omega_z_0 = 99.86535
+
+    sample_rate = 1000
+    params = np.array([1.94977766, 2.60590206, -2.7299242, -1.60359176, -1.16171635, 2.38431112, -0.98774287, 3.16765493])
+    K_wave = utilities.waveform(4.2644e-28, 4.2644e-28 / 25, params[-1], sample_rate, params[:-1])
+    omega_r = omega_r_0 * np.sqrt(K_wave / K_wave[0])
+    omega_z = omega_z_0 * np.sqrt(K_wave / K_wave[0])
+
+    m = 6 * constants.atomic_mass
+    N = 192536.515532
+    E = 1.259145e-24
+    beta = 5.69140e+32
+    mu = 8.723438e-30
+
+    energy_scale = N / E
+    E_scaled = E * energy_scale
+    m_scaled = m * energy_scale
+    hbar_scaled = constants.hbar * energy_scale
+    K_scaled = K_wave[2240] * energy_scale
+    beta_scaled = beta / energy_scale
+    mu_scaled = mu * energy_scale
+    density_of_state_scale = 1 / (hbar_scaled**3 * omega_r[2240]**2 * omega_z[2240])
+    diff = N_E_diff([beta_scaled, mu_scaled], N, E_scaled, K_scaled, density_of_state_scale)
+    beta_scaled, mu_scaled = calculate_beta_and_mu(N, E_scaled, K_scaled, beta_scaled, mu_scaled, density_of_state_scale)
+    print(diff)
+    print((beta_scaled, mu_scaled))
+
 if __name__ == '__main__':
-    main()
+    test1()
