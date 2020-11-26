@@ -464,21 +464,23 @@ class Learner():
 
     def get_experiment_costs(self, params_set):
         # 并行实现
-        # multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
-        #     np.array([params]),)) for params in params_set]
-        # costs_list = [result.get() for result in multiple_results]
-        # costs = np.array(costs_list).reshape(-1,)
-        costs = self.interface.get_experiment_costs(params_set)
+        multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
+            np.array([params]),)) for params in params_set]
+        costs_list = [result.get() for result in multiple_results]
+        costs = np.array(costs_list).reshape(-1,)
+        # costs = self.interface.get_experiment_costs(params_set)
         return costs
 
     def _save_archive(self):
         save_params_set = None
         # K-聚类获得典型参数
-        self.k_means.fit(self.train_params_set)
-        labels = self.k_means.predict(self.train_params_set)
+        temp_params_set = np.vstack((self.window_params_set, self.train_params_set))
+        temp_costs_set = np.hstack((self.window_costs_set, self.train_costs_set))
+        self.k_means.fit(temp_params_set)
+        labels = self.k_means.predict(temp_params_set)
         for i in range(self.save_params_set_size):
-            params_subset = self.train_params_set[labels == i]
-            costs_subset = self.train_costs_set[labels == i]
+            params_subset = temp_params_set[labels == i]
+            costs_subset = temp_costs_set[labels == i]
             index = np.argmin(costs_subset)
             if save_params_set is None:
                 save_params_set = np.array([params_subset[index]])

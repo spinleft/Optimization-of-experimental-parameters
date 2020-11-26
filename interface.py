@@ -15,7 +15,7 @@ class Interface():
         self.num_params = 8
         self.min_boundary = [-3., -3., -3., -3., -3., -3., -3., 5.]
         self.max_boundary = [3., 3., 3., 3., 3., 3., 3., 50.]
-        self.startpoint = 12 * constants * 1.5e-6
+        self.startpoint = 12 * constants.Boltzmann * 1.5e-6
         self.endpoint = self.startpoint / 25
         # self.tf = 15.71
         self.sample_rate = 20
