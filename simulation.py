@@ -12,8 +12,8 @@ def calculate_temperature(K_wave, omega_r, omega_z, sample_rate):
     T = 10e-6
     sigma = 4 * np.pi * (137 * a0)**2
     m = 6 * constants.atomic_mass
-    N = 8649427.09721088
-    E = 2.251483454531782e-21
+    N = 5e6
+    E = 3 * N * kB * T
     beta = 1 / (kB * T)
     mu = -3e-28
     gamma = 1 / 1000
@@ -88,8 +88,8 @@ def J_22_kernel(x, beta, mu, density_of_state_scale):
 def N_E_diff(x, N, E, K, density_of_state_scale):
     beta = float(x[0])
     mu = float(x[1])
-    lower_limit = min(0, mu + 600 / beta)
-    upper_limit = min(K, mu + 600 / beta)
+    lower_limit = min(0, mu + 600 / beta) if beta > 0 else max(0, mu + 600 / beta)
+    upper_limit = min(K, mu + 600 / beta) if beta > 0 else max(K, mu + 600 / beta)
     N_diff = integrate.quad(N_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0] - N
     E_diff = integrate.quad(E_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0] - E
     return [N_diff, E_diff]
@@ -97,8 +97,8 @@ def N_E_diff(x, N, E, K, density_of_state_scale):
 def Jacobi(x, N, E, K, density_of_state_scale):
     beta = float(x[0])
     mu = float(x[1])
-    lower_limit = max(min(0, mu + 600 / beta), mu - 600 / beta)
-    upper_limit = max(min(K, mu + 600 / beta), mu - 600 / beta)
+    lower_limit = max(min(0, mu + 600 / abs(beta)), mu - 600 / abs(beta))
+    upper_limit = max(min(K, mu + 600 / abs(beta)), mu - 600 / abs(beta))
     J_11 = integrate.quad(J_11_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0]
     J_12 = integrate.quad(J_12_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0]
     J_21 = integrate.quad(J_21_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))[0]
@@ -107,25 +107,6 @@ def Jacobi(x, N, E, K, density_of_state_scale):
 
 def calculate_beta_and_mu(N, E, K, beta, mu, density_of_state_scale):
     return optimize.fsolve(N_E_diff, [beta, mu], args=(N, E, K, density_of_state_scale), fprime=Jacobi)
-
-# def calculate_beta_and_mu(N, E, K, beta_0, mu_0, density_of_state_scale):
-#     beta = beta_0
-#     mu = mu_0
-#     while True:
-#         f_1 = calculate_N(K, beta, mu, density_of_state_scale) / N - 1
-#         f_2 = calculate_E(K, beta, mu, density_of_state_scale) / E - 1
-#         f = np.matrix([[f_1], [f_2]])
-#         J_11 = partial_beta_N(K, beta, mu, density_of_state_scale) / N
-#         J_12 = partial_mu_N(K, beta, mu, density_of_state_scale) / N
-#         J_21 = partial_beta_E(K, beta, mu, density_of_state_scale) / E
-#         J_22 = partial_mu_E(K, beta, mu, density_of_state_scale) / E
-#         J = np.matrix([[J_11, J_12], [J_21, J_22]])
-#         delta = - np.dot(J.I, f)
-#         if abs(delta[0,0]) < 0.001 * abs(beta) and abs(delta[1,0]) < 0.001 * abs(mu):
-#             break
-#         beta = beta + delta[0,0]
-#         mu = mu + delta[1,0]
-#     return beta, mu
 
 def calculate_N(K, beta, mu, density_of_state_scale):
     de = 0.00001 * K
@@ -143,48 +124,24 @@ def calculate_E(K, beta, mu, density_of_state_scale):
     E = 0.5 * np.sum(E_e) * de * density_of_state_scale
     return E
 
-# def partial_beta_N(K, beta, mu, density_of_state_scale):
-#     de = 0.00001 * K
-#     e = np.arange(0, K, de)
-#     beta_e_minus_mu = beta * (e - mu)
-#     partial_beta_N_e = e**2 * (e - mu) / (2 + np.exp(beta_e_minus_mu) + np.exp(-beta_e_minus_mu))
-#     partial_beta_N = -0.5 * np.sum(partial_beta_N_e) * de * density_of_state_scale
-#     return partial_beta_N
-
-# def partial_mu_N(K, beta, mu, density_of_state_scale):
-#     de = 0.00001 * K
-#     e = np.arange(0, K, de)
-#     beta_e_minus_mu = beta * (e - mu)
-#     partial_mu_N_e = e**2 / (2 + np.exp(beta_e_minus_mu) + np.exp(-beta_e_minus_mu))
-#     partial_mu_N = 0.5 * beta * np.sum(partial_mu_N_e) * de * density_of_state_scale
-#     return partial_mu_N
-
-# def partial_beta_E(K, beta, mu, density_of_state_scale):
-#     de = 0.0001 * K
-#     e = np.arange(0, K, de)
-#     beta_e_minus_mu = beta * (e - mu)
-#     partial_beta_E_e = e**3 * (e - mu) / (2 + np.exp(beta_e_minus_mu) + np.exp(-beta_e_minus_mu))
-#     partial_beta_E = -0.5 * np.sum(partial_beta_E_e) * de * density_of_state_scale
-#     return partial_beta_E
-
-# def partial_mu_E(K, beta, mu, density_of_state_scale):
-#     de = 0.00001 * K
-#     e = np.arange(0, K, de)
-#     beta_e_minus_mu = beta * (e - mu)
-#     partial_mu_E_e = e**3 / (2 + np.exp(beta_e_minus_mu) + np.exp(-beta_e_minus_mu))
-#     partial_mu_E = 0.5 * beta * np.sum(partial_mu_E_e) * de * density_of_state_scale
-#     return partial_mu_E
-
 def dN_1_kernel(z, y, x, beta, mu, density_of_state_scale):
     return 0.5 * (density_of_state_scale * y**2) / (1 + np.exp(beta * (x + y - z - mu))) / (1 + np.exp(beta * (z - mu))) / (1 + np.exp(-beta * (y - mu)))
 
 def calculate_dN_1(K, beta, mu, density_of_state_scale):
-    min_x = min(K, mu + 1800 / beta)
-    max_x = min(2 * K, mu + 1800 / beta)
-    min_y = lambda x: min(max(0, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
-    max_y = lambda x: min(max(2 * K - x, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
-    min_z = lambda x, y: max(min(x + y - K, mu + 600 / beta), x + y - (mu + 600 / beta))
-    max_z = lambda x, y: max(min(K, mu + 600 / beta), x + y - (mu + 600 / beta))
+    if beta > 0:
+        min_x = min(K, mu + 1800 / beta) if beta > 0 else max(0, mu + 1800 / beta)
+        max_x = min(2 * K, mu + 1800 / beta) if beta > 0 else max(2 * K, mu + 1800 / beta)
+        min_y = lambda x: min(max(0, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+        max_y = lambda x: min(max(2 * K - x, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+        min_z = lambda x, y: max(min(x + y - K, mu + 600 / beta), x + y - (mu + 600 / beta))
+        max_z = lambda x, y: max(min(K, mu + 600 / beta), x + y - (mu + 600 / beta))
+    else:
+        min_x = max(0, mu + 1800 / beta)
+        max_x = max(2 * K, mu + 1800 / beta)
+        min_y = lambda x: max(min(0, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+        max_y = lambda x: max(min(2 * K - x, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+        min_z = lambda x, y: min(max(x + y - K, mu + 600 / beta), x + y - (mu + 600 / beta))
+        max_z = lambda x, y: min(max(K, mu + 600 / beta), x + y - (mu + 600 / beta))
     return  integrate.tplquad(dN_1_kernel, min_x, max_x, min_y, max_y, min_z, max_z, args=(beta, mu, density_of_state_scale))
 
 def dE_1_kernel(z, y, x, beta, mu, density_of_state_scale):
@@ -310,24 +267,24 @@ def test1():
     omega_r = omega_r_0 * np.sqrt(K_wave / K_wave[0])
     omega_z = omega_z_0 * np.sqrt(K_wave / K_wave[0])
 
-    m = 6 * constants.atomic_mass
-    N = 192536.515532
-    E = 1.259145e-24
-    beta = 5.69140e+32
-    mu = 8.723438e-30
+    kB = constants.Boltzmann
+    T = 10e-6
+    N = 5e6
+    E = 3 * N * kB * T
+    beta = 1 / (kB * T)
+    mu = 4e-32
 
     energy_scale = N / E
     E_scaled = E * energy_scale
-    m_scaled = m * energy_scale
     hbar_scaled = constants.hbar * energy_scale
     K_scaled = K_wave[2240] * energy_scale
     beta_scaled = beta / energy_scale
     mu_scaled = mu * energy_scale
     density_of_state_scale = 1 / (hbar_scaled**3 * omega_r[2240]**2 * omega_z[2240])
-    diff = N_E_diff([beta_scaled, mu_scaled], N, E_scaled, K_scaled, density_of_state_scale)
+    # diff = N_E_diff([beta_scaled, mu_scaled], N, E_scaled, K_scaled, density_of_state_scale)
     beta_scaled, mu_scaled = calculate_beta_and_mu(N, E_scaled, K_scaled, beta_scaled, mu_scaled, density_of_state_scale)
-    print(diff)
-    print((beta_scaled, mu_scaled))
+    # print(diff)
+    print((beta_scaled*density_of_state_scale, mu_scaled/density_of_state_scale))
 
 if __name__ == '__main__':
     test1()

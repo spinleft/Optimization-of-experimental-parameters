@@ -106,7 +106,7 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoin
             wave = waveform(startpoint, endpoint,
                             params[-1], sample_rate, params[:-1])
             wave_diff = np.diff(wave)
-            if np.max(wave) <= 4.2644e-28 and np.min(wave) > 4.2644e-28 / 100 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
+            if np.max(wave) <= 4.2644e-28 and np.min(wave) >= 4.2644e-28 / 25 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
                 params_set = np.array([params]) if (
                     i == 0) else np.vstack((params_set, params))
                 flag = False
@@ -127,7 +127,7 @@ def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, para
             wave = waveform(startpoint, endpoint,
                             params[-1], sample_rate, params[:-1])
             wave_diff = np.diff(wave)
-            if np.max(wave) <= 4.2644e-28 and np.min(wave) > 4.2644e-28 / 100 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
+            if np.max(wave) <= 4.2644e-28 and np.min(wave) >= 4.2644e-28 / 25 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
                 params_set = np.array([params]) if (
                     i == 0) else np.vstack((params_set, params))
                 flag = False
