@@ -4,24 +4,26 @@ from scipy import integrate
 from scipy import constants
 import utilities
 
-def calculate_temperature(K_wave, omega_r, omega_z, sample_rate):
+def calculate_temperature(K_wave, sample_rate):
     dt = 1. / sample_rate
+    m = 40 * constants.atomic_mass
+    pi = np.pi
     hbar = constants.hbar
     kB = constants.Boltzmann
     a0 = 5.2917721067e-11
-    T = 10e-6
-    sigma = 4 * np.pi * (137 * a0)**2
-    m = 6 * constants.atomic_mass
-    N = 5e6
+    T = 1.5e-6
+    sigma = 4 * pi * (157 * a0)**2
+    omega = 70 * 2 * pi
+    N = 3.2e6
     E = 3 * N * kB * T
     beta = 1 / (kB * T)
-    mu = -3e-28
-    gamma = 1 / 1000
+    mu = -6.87081756e-29
+    gamma = 1 / 135
 
     beta_list = []
     mu_list = []
     for i in range(len(K_wave)-1):
-        # 用四点多项式外推下一个beta和mu
+        # 用三点多项式外推下一个beta和mu
         if i > 3:
             beta = 3 * beta_list[-1] - 3 * beta_list[-2] + beta_list[-3]
             mu = 3 * mu_list[-1] - 3 * mu_list[-2] + mu_list[-3]
@@ -33,21 +35,21 @@ def calculate_temperature(K_wave, omega_r, omega_z, sample_rate):
         K_scaled = K_wave[i] * energy_scale
         beta_scaled = beta / energy_scale
         mu_scaled = mu * energy_scale
-        density_of_state_scale = 1 / (hbar_scaled**3 * omega_r[i]**2 * omega_z[i])
+        density_of_state_scale = 1 / (hbar_scaled * omega)**3
         # 牛顿迭代法求解beta和mu
-        # print("t = %e: N = %f, E = %e"%(i * dt, N, E))
+        print("t = %e: N = %f, E = %e"%(i * dt, N, E))
         beta_scaled, mu_scaled = calculate_beta_and_mu(N, E_scaled, K_scaled, beta_scaled, mu_scaled, density_of_state_scale)
         # 更新带量纲的beta和mu
         beta = beta_scaled * energy_scale
         mu = mu_scaled / energy_scale
         beta_list.append(beta)
         mu_list.append(mu)
-        # E_F = (6 * N)**(1/3) * hbar * (omega_r[i]**2 * omega_z[i])**(1/3)
-        # T_over_TF = 1 / (beta * E_F)
-        # print("beta = %e, mu = %e, T/T_F = %e"%(beta, mu, T_over_TF))
+        E_F = (6 * N)**(1/3) * hbar * omega
+        T_over_TF = 1 / (beta * E_F)
+        print("beta = %e, mu = %e, T/T_F = %e"%(beta, mu, T_over_TF))
         # 计算各部分的N和E损失
-        dN_1 = calculate_dN_1(K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0] * dt * m_scaled * sigma / (np.pi**2 * hbar_scaled**3)
-        dE_1 = calculate_dE_1(K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0] * dt * m_scaled * sigma / (np.pi**2 * hbar_scaled**3)
+        dN_1 = calculate_dN_1(K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0] * dt * m_scaled * sigma / (pi**2 * hbar_scaled**3)
+        dE_1 = calculate_dE_1(K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0] * dt * m_scaled * sigma / (pi**2 * hbar_scaled**3)
         dN_2 = gamma * N * dt
         dE_2 = gamma * E_scaled * dt
         if (K_wave[i] - K_wave[i+1]) > 0:
@@ -62,7 +64,7 @@ def calculate_temperature(K_wave, omega_r, omega_z, sample_rate):
         E = E - (dE_1 + dE_2 + dE_3) / energy_scale
         
     # 计算最后的T/T_F
-    E_F = (6 * N)**(1/3) * hbar * (omega_r[-1]**2 * omega_z[-1])**(1/3)
+    E_F = (6 * N)**(1/3) * hbar * omega
     T_over_TF = 1 / (beta * E_F)
     print("N = %f, T/T_F = %e"%(N, T_over_TF))
     return T_over_TF
@@ -107,22 +109,6 @@ def Jacobi(x, N, E, K, density_of_state_scale):
 
 def calculate_beta_and_mu(N, E, K, beta, mu, density_of_state_scale):
     return optimize.fsolve(N_E_diff, [beta, mu], args=(N, E, K, density_of_state_scale), fprime=Jacobi)
-
-def calculate_N(K, beta, mu, density_of_state_scale):
-    de = 0.00001 * K
-    e = np.arange(0, K, de)
-    beta_e_minus_mu = beta * (e - mu)
-    N_e = e**2 / (1 + np.exp(beta_e_minus_mu))
-    N = 0.5 * np.sum(N_e) * de * density_of_state_scale
-    return N
-
-def calculate_E(K, beta, mu, density_of_state_scale):
-    de = 0.00001 * K
-    e = np.arange(0, K, de)
-    beta_e_minus_mu = beta * (e - mu)
-    E_e = e**3 / (1 + np.exp(beta_e_minus_mu))
-    E = 0.5 * np.sum(E_e) * de * density_of_state_scale
-    return E
 
 def dN_1_kernel(z, y, x, beta, mu, density_of_state_scale):
     return 0.5 * (density_of_state_scale * y**2) / (1 + np.exp(beta * (x + y - z - mu))) / (1 + np.exp(beta * (z - mu))) / (1 + np.exp(-beta * (y - mu)))
@@ -173,52 +159,18 @@ def calculate_dE_3(K_prime, K, beta, mu, density_of_state_scale):
     return integrate.quad(dE_3_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))
 
 def main():
-    K_0 = 4.2644e-28
-    omega_r_0 = 13135.56
-    omega_z_0 = 99.86535
-
-    results = []
-    for tf in np.arange(9.0, 20.0, 1.0):
-        sample_rate = 200
-        t_step = 1 / sample_rate
-        t = np.arange(0., tf, t_step)
-        K_wave = K_0 * np.exp(-t * (np.log(25) / tf))
-        omega_r = omega_r_0 * np.sqrt(K_wave / K_wave[0])
-        omega_z = omega_z_0 * np.sqrt(K_wave / K_wave[0])
-        print("tf = %f:"%tf)
-        result = calculate_temperature(K_wave, omega_r, omega_z, sample_rate)
-        results.append(result)
-    print(results)
-
-def test():
-    omega_r_0 = 13135.56
-    omega_z_0 = 99.86535
-
-    sample_rate = 1000
-    params = np.array([1.94977766, 2.60590206, -2.7299242, -1.60359176, -1.16171635, 2.38431112, -0.98774287, 3.16765493])
-    K_wave = utilities.waveform(4.2644e-28, 4.2644e-28 / 25, params[-1], sample_rate, params[:-1])
-    # t_step = 1 / sample_rate
-    # t = np.arange(0., 5, t_step)
-    # K_wave = 4.2644e-28 * np.exp(-t * (np.log(25) / 5))
-    omega_r = omega_r_0 * np.sqrt(K_wave / K_wave[0])
-    omega_z = omega_z_0 * np.sqrt(K_wave / K_wave[0])
-    calculate_temperature(K_wave, omega_r, omega_z, sample_rate)
-
-def calculate_N_E():
-    hbar = constants.hbar
     kB = constants.Boltzmann
-    T = 10e-6
-    K_0 = 3.9731758457021166e-29
-    omega_r_0 = 4009.4843113403117
-    omega_z_0 = 30.482792821281258
-    density_of_state_scale = 1 / (hbar**3 * omega_r_0**2 * omega_z_0)
-    beta = 2.691140e+31
-    mu = 8.715738e-30
+    T = 1.5e-6
+    K_0 = 12 * kB * T
 
-    N = calculate_N(K_0, beta, mu, density_of_state_scale)
-    E = calculate_E(K_0, beta, mu, density_of_state_scale)
-    print(N)
-    print(E)
+    sample_rate = 20
+    tf = 5
+    t_step = 1 / sample_rate
+    t = np.arange(0., tf, t_step)
+    K_wave = K_0 * np.exp(-t * (np.log(25) / tf))
+    print("tf = %f:"%tf)
+    result = calculate_temperature(K_wave, sample_rate)
+    print(result)
 
 def calculate_trap():
     pi = np.pi
@@ -254,37 +206,22 @@ def calculate_trap():
     print("omega_y = %f"%omega_y)
     print("omega_z = %f"%omega_z)
 
-def gauss_kernel(x):
-    return np.exp(x)
-
-def test1():
-    omega_r_0 = 13135.56
-    omega_z_0 = 99.86535
-
-    sample_rate = 1000
-    params = np.array([1.94977766, 2.60590206, -2.7299242, -1.60359176, -1.16171635, 2.38431112, -0.98774287, 3.16765493])
-    K_wave = utilities.waveform(4.2644e-28, 4.2644e-28 / 25, params[-1], sample_rate, params[:-1])
-    omega_r = omega_r_0 * np.sqrt(K_wave / K_wave[0])
-    omega_z = omega_z_0 * np.sqrt(K_wave / K_wave[0])
-
+def prework():
+    pi = np.pi
+    hbar = constants.hbar
     kB = constants.Boltzmann
-    T = 10e-6
-    N = 5e6
+    T = 1.5e-6
+    N = 3.2e6
     E = 3 * N * kB * T
+    K = 4 * E / N
     beta = 1 / (kB * T)
-    mu = 4e-32
+    mu = -6.87081756e-29
+    omega = 70 * 2 * pi
+    density_of_state_scale = 1 / (hbar * omega)**3
 
-    energy_scale = N / E
-    E_scaled = E * energy_scale
-    hbar_scaled = constants.hbar * energy_scale
-    K_scaled = K_wave[2240] * energy_scale
-    beta_scaled = beta / energy_scale
-    mu_scaled = mu * energy_scale
-    density_of_state_scale = 1 / (hbar_scaled**3 * omega_r[2240]**2 * omega_z[2240])
-    # diff = N_E_diff([beta_scaled, mu_scaled], N, E_scaled, K_scaled, density_of_state_scale)
-    beta_scaled, mu_scaled = calculate_beta_and_mu(N, E_scaled, K_scaled, beta_scaled, mu_scaled, density_of_state_scale)
-    # print(diff)
-    print((beta_scaled*density_of_state_scale, mu_scaled/density_of_state_scale))
+    print([beta, mu])
+    result = calculate_beta_and_mu(N, E, K, beta, mu, density_of_state_scale)
+    print(result)
 
 if __name__ == '__main__':
-    test1()
+    main()

@@ -26,12 +26,12 @@ class Learner():
 
         # 神经网络超参数
         self.layer_dims = [64] * 5
-        # 神经网络的val_loss下降小于train_threshold_ratio若干次时，停止训练
+        # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
         self.train_threshold_ratio = 0.01
         self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
-        self.max_epoch = 1000
+        self.max_epoch = 1000                   # 最大训练epoch
 
         # 训练参数
         self.initial_params_set_size = interface.initial_params_set_size
@@ -41,15 +41,16 @@ class Learner():
         self.window_size = interface.window_size
         self.max_num_iteration = interface.max_num_iteration
         self.save_params_set_size = interface.save_params_set_size
-        self.init_net_weight_num = 10
-        self.reset_net_weight_num = 20
-        self.reset_net_weight_patience = 10
-        self.std_dev = 0.03
+        self.init_net_weight_num = 10       # 初始化神经网络时尝试随机权重的次数
+        self.reset_net_weight_num = 20      # 重置权重时尝试随机权重的次数
+        self.max_patience = 10              # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
+        self.window_retain_size = 3         # 抛弃窗口参数时保留的参数数量
+        self.std_dev = 0.03                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
 
         # 训练文件
-        self.archive_dir = interface.archive_dir
-        self.archive_file_prefix = 'archive_'
-        self.start_datetime = utilities.get_datetime_now_string()
+        self.archive_dir = interface.archive_dir                    # 存档目录
+        self.archive_file_prefix = 'archive_'                       # 存档前缀
+        self.start_datetime = utilities.get_datetime_now_string()   # 存档日期
         self.archive_filename = os.path.join(self.archive_dir,
                                              self.archive_file_prefix+self.start_datetime+'.txt')
         # 存档
@@ -70,12 +71,12 @@ class Learner():
         # 构造聚类器
         self.k_means = KMeans(
             n_clusters=self.save_params_set_size, max_iter=1000)
-        
+
         # 创建进程池
         self.num_cores = os.cpu_count()
         self.pool = multiprocessing.Pool(processes=self.num_cores)
 
-    def initialize_neural_net(self):
+    def _initialize_neural_net(self):
         # 新建神经网络
         self.net = neuralnet.NeuralNet(self.min_boundary,
                                        self.max_boundary,
@@ -102,9 +103,9 @@ class Learner():
                 best_loss = loss
                 best_weights = self.net.get_weights()
         self.net.set_weights(best_weights)
-        self.last_neural_net_weight = best_weights
 
-    def reset_neural_net(self):
+    def _reset_neural_net(self):
+        # 重置神经网络权重
         # 随机初始化网络多次，选择在窗口参数上 loss 最小的权重
         best_loss = self.net.get_loss(
             self.window_params_set, self.window_costs_set)
@@ -126,39 +127,38 @@ class Learner():
 
     def init(self):
         # 随机产生一组参数，获取实验结果
+        print("Iteration 0...")
         self.init_params_set = self.get_init_params()
         self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
 
-        # 筛选好的参数放入窗口
+        # 筛选好的参数放入窗口，最多不超过初始参数的一半
+        max_size = min(self.window_size, self.initial_params_set_size // 2)
         indexes = np.argsort(self.init_costs_set)
-        self.window_params_set = self.init_params_set[indexes[:self.window_size]]
-        self.window_costs_set = self.init_costs_set[indexes[:self.window_size]]
-        self.train_params_set = self.init_params_set[indexes[self.window_size:]]
-        self.train_costs_set = self.init_costs_set[indexes[self.window_size:]]
-
-        # 随机初始化神经网络，选择训练后 loss 最小的网络
-        print("Initializing...")
-        self.initialize_neural_net()
-        self.last_val_loss = float('inf')
-
+        self.window_params_set = self.init_params_set[indexes[:max_size]]
+        self.window_costs_set = self.init_costs_set[indexes[:max_size]]
+        self.train_params_set = self.init_params_set[indexes[max_size:]]
+        self.train_costs_set = self.init_costs_set[indexes[max_size:]]
         # 记录初始化的最好参数和结果
-        index = np.argmin(self.window_costs_set)
-        self.best_params = self.window_params_set[index]
-        self.best_cost = self.window_costs_set[index]
+        self.best_params = self.init_params_set[indexes[0]]
+        self.best_cost = self.init_costs_set[indexes[0]]
         # 新建记录列表
         self.best_params_list = np.array([self.best_params], dtype=float)
         self.best_costs_list = np.array([self.best_cost], dtype=float)
         self.last_iteration = 0
-        self.last_reset_net_iteration = 0
         # 记入档案
         self.archive.update({'best_params_list': self.best_params_list,
                              'best_costs_list': self.best_cost,
                              'best_params': self.best_params,
                              'best_cost': self.best_cost,
-                             'last_iteration': self.last_iteration,
-                             'last_reset_net_iteration': self.last_reset_net_iteration})
-        # self._save_archive()
+                             'last_iteration': self.last_iteration})
+
+        # 随机初始化神经网络，选择训练后 loss 最小的网络
+        print("Initializing net...")
+        self._initialize_neural_net()
+        self.last_val_loss = float('inf')
+        # 存档
+        self._save_archive()
 
     def load(self, start_datetime):
         # 加载存档
@@ -216,33 +216,24 @@ class Learner():
         self.best_params_list = self.archive['best_params_list']
         self.best_costs_list = self.archive['best_costs_list']
         self.last_iteration = self.archive['last_iteration']
-        self.last_reset_net_iteration = self.archive['last_reset_net_iteration']
 
+        # 读取上次保存的典型参数，获取实验结果
         self.last_iteration += 1
         print("Iteration %d..." % self.last_iteration)
-        # 加载神经网络
-        load_neural_net_archive_filename = self.archive['neural_net_archive_filename']
-        self.net = neuralnet.NeuralNet(self.min_boundary,
-                                       self.max_boundary,
-                                       archive_dir=self.archive_dir,
-                                       start_datetime=self.start_datetime)
-        self.net.load(self.archive, load_neural_net_archive_filename)
-        # 读取上次保存的典型参数，获取实验结果
         self.init_params_set = np.array(self.archive['save_params_set'])
         self.init_costs_set = self.get_experiment_costs(
             self.train_params_set)
 
-        # 筛选好的参数放入窗口
+        # 筛选好的参数放入窗口，最多不超过初始参数的一半
+        max_size = min(self.window_size, len(self.init_costs_set) // 2)
         indexes = np.argsort(self.init_costs_set)
-        self.window_params_set = self.init_params_set[indexes[:self.window_size]]
-        self.window_costs_set = self.init_costs_set[indexes[:self.window_size]]
-        self.train_params_set = self.init_params_set[indexes[self.window_size:]]
-        self.train_costs_set = self.init_costs_set[indexes[self.window_size:]]
-
+        self.window_params_set = self.init_params_set[indexes[:max_size]]
+        self.window_costs_set = self.init_costs_set[indexes[:max_size]]
+        self.train_params_set = self.init_params_set[indexes[max_size:]]
+        self.train_costs_set = self.init_costs_set[indexes[max_size:]]
         # 记录典型参数中的最好参数和结果
-        index = np.argmin(self.window_costs_set)
-        self.best_params = self.window_params_set[index]
-        self.best_cost = self.window_costs_set[index]
+        self.best_params = self.init_params_set[indexes[0]]
+        self.best_cost = self.init_costs_set[indexes[0]]
         # 记入记录列表
         self.best_params_list = np.vstack(
             (self.best_params_list, self.best_params))
@@ -253,16 +244,23 @@ class Learner():
                              'best_costs_list': self.best_costs_list,
                              'best_params': self.best_params,
                              'best_cost': self.best_cost,
-                             'last_iteration': self.last_iteration,
-                             'last_reset_net_iteration': self.last_reset_net_iteration})
-        # self._save_archive()
-    
+                             'last_iteration': self.last_iteration})
+        # 加载神经网络
+        load_neural_net_archive_filename = self.archive['neural_net_archive_filename']
+        self.net = neuralnet.NeuralNet(self.min_boundary,
+                                       self.max_boundary,
+                                       archive_dir=self.archive_dir,
+                                       start_datetime=self.start_datetime)
+        self.net.load(self.archive, load_neural_net_archive_filename)
+        # 存档
+        self._save_archive()
+
     def close(self):
         self.pool.close()
         self.pool.join()
 
     def train(self):
-
+        patience_count = 0
         for i in range(self.last_iteration + 1, self.last_iteration + 1 + self.max_num_iteration):
             print("Iteration %d..." % i)
             # Step1: 训练神经网络
@@ -318,13 +316,14 @@ class Learner():
                         (self.train_params_set, select_good_params_set[j]))
                     self.train_costs_set = np.hstack(
                         (self.train_costs_set, select_good_costs_set[j]))
-            # 将select_random_params_set替换入window_params_set或放入train_params_set
+            # 将select_random_params_set归并或加入window_params_set或放入train_params_set
             for j in range(len(select_random_params_set)):
                 insert_into_window = False
                 for k in range(len(self.window_params_set)):
                     distance = np.abs(select_random_params_set[j] - self.window_params_set[k]) / (
                         self.max_boundary - self.min_boundary)
                     if (distance < self.std_dev).all() and select_random_costs_set[j] < self.window_costs_set[k]:
+                        # 与窗口中原有参数归并
                         insert_into_window = True
                         self.train_params_set = np.vstack(
                             (self.train_params_set, self.window_params_set[k]))
@@ -334,11 +333,13 @@ class Learner():
                         self.window_costs_set[k] = select_random_costs_set[j]
                         break
                 if insert_into_window == False:
+                    # 暂存入窗口
                     self.window_params_set = np.vstack(
                         (self.window_params_set, select_random_params_set[j]))
                     self.window_costs_set = np.hstack(
                         (self.window_costs_set, select_random_costs_set[j]))
             if self.window_size < len(self.window_costs_set):
+                # 裁剪窗口
                 indexes = np.argsort(self.window_costs_set)
                 self.train_params_set = np.vstack(
                     (self.train_params_set, self.window_params_set[indexes[self.window_size:]]))
@@ -359,23 +360,33 @@ class Learner():
             if iteration_best_cost < self.best_cost:
                 self.best_params = iteration_best_params
                 self.best_cost = iteration_best_cost
+            # best_cost长时间不下降时，去除部分窗口参数，重置网络权重
+            if (iteration_best_cost <= self.best_costs_list[-self.max_patience:]).all():
+                patience_count = 0
+            else:
+                patience_count += 1
+            if not patience_count < self.max_patience:
+                self.train_params_set = np.vstack(
+                    (self.train_params_set, self.window_params_set[self.window_retain_size:]))
+                self.train_costs_set = np.hstack(
+                    (self.train_costs_set, self.window_costs_set[self.window_retain_size:]))
+                self.window_params_set = self.window_params_set[:self.window_retain_size]
+                self.window_costs_set = self.window_costs_set[:self.window_retain_size]
+                self._reset_neural_net()
+                patience_count = 0
             # 将本次循环的最好参数和结果加入列表
             self.best_params_list = np.vstack(
                 (self.best_params_list, iteration_best_params))
             self.best_costs_list = np.hstack(
                 (self.best_costs_list, iteration_best_cost))
-            # best_cost长时间不下降时，重置网络权重
-            if (i - self.last_reset_net_iteration >= self.reset_net_weight_patience) and (self.best_cost not in self.best_costs_list[-self.reset_net_weight_patience:]):
-                self.reset_neural_net()
-                self.last_reset_net_iteration = i
             # 更新档案
             self.archive.update({'best_params_list': self.best_params_list,
                                  'best_costs_list': self.best_costs_list,
                                  'best_params': self.best_params,
                                  'best_cost': self.best_cost,
-                                 'last_iteration': i,
-                                 'last_reset_net_iteration': self.last_reset_net_iteration})
-            # self._save_archive()
+                                 'last_iteration': i})
+            # 存档
+            self._save_archive()
             print("The best params in iteration " + str(i) +
                   " is: " + str(iteration_best_params))
             print("The best cost in iteration " + str(i) +
@@ -388,10 +399,10 @@ class Learner():
         self._save_archive()
 
     def get_init_params(self):
-        num_cores = self.num_cores
-        block_size = int(self.initial_params_set_size / num_cores)
-        blocks = [block_size] * (num_cores - 1) + \
-            [self.initial_params_set_size - block_size * (num_cores - 1)]
+        # 并行产生随机数
+        block_size = int(self.initial_params_set_size / self.num_cores)
+        blocks = [block_size] * (self.num_cores - 1) + \
+            [self.initial_params_set_size - block_size * (self.num_cores - 1)]
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
@@ -403,15 +414,16 @@ class Learner():
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
-        for i in range(1, num_cores):
+        for i in range(1, self.num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
         return params_set
 
     def get_predict_good_params_set(self, base_params):
-        num_cores = self.num_cores
-        block_size = int(self.predict_good_params_set_size / num_cores)
-        blocks = [block_size] * (num_cores - 1) + \
-            [self.predict_good_params_set_size - block_size * (num_cores - 1)]
+        # 并行产生随机数
+        block_size = int(self.predict_good_params_set_size / self.num_cores)
+        blocks = [block_size] * (self.num_cores - 1) + \
+            [self.predict_good_params_set_size -
+                block_size * (self.num_cores - 1)]
         multiple_results = [self.pool.apply_async(utilities.get_normal_params_set, args=(
             self.min_boundary,
             self.max_boundary,
@@ -425,15 +437,16 @@ class Learner():
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
-        for i in range(1, num_cores):
+        for i in range(1, self.num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
         return params_set
-    
+
     def get_predict_random_params_set(self):
-        num_cores = self.num_cores
-        block_size = int(self.predict_random_params_set_size / num_cores)
-        blocks = [block_size] * (num_cores - 1) + \
-            [self.predict_random_params_set_size - block_size * (num_cores - 1)]
+        # 并行产生随机数
+        block_size = int(self.predict_random_params_set_size / self.num_cores)
+        blocks = [block_size] * (self.num_cores - 1) + \
+            [self.predict_random_params_set_size -
+                block_size * (self.num_cores - 1)]
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
@@ -445,14 +458,17 @@ class Learner():
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
-        for i in range(1, num_cores):
+        for i in range(1, self.num_cores):
             params_set = np.vstack((params_set, params_set_list[i]))
         return params_set
-    
+
     def get_experiment_costs(self, params_set):
-        multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(np.array([params]),)) for params in params_set]
-        costs_list = [result.get() for result in multiple_results]
-        costs = np.array(costs_list).reshape(-1,)
+        # 并行实现
+        # multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
+        #     np.array([params]),)) for params in params_set]
+        # costs_list = [result.get() for result in multiple_results]
+        # costs = np.array(costs_list).reshape(-1,)
+        costs = self.interface.get_experiment_costs(params_set)
         return costs
 
     def _save_archive(self):

@@ -40,13 +40,14 @@ def get_result_from_file(filename):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-    result = np.array([])
+    result = []
     with open(filename, 'r') as in_file:
         for line in in_file:
             temp = line.strip('\n')
             if temp != '':
-                result = np.hstack((result, float(temp)))
+                result.append(float(temp))
         in_file.close()
+    result = np.array(result)
     return result
 
 
@@ -99,6 +100,7 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
 
 def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoint, endpoint, sample_rate):
     rng = np.random.default_rng()
+    params_set = np.zeros(shape=(params_set_size, len(min_boundary)))
     for i in range(params_set_size):
         flag = True
         while flag:
@@ -107,8 +109,7 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoin
                             params[-1], sample_rate, params[:-1])
             wave_diff = np.diff(wave)
             if np.max(wave) <= 4.2644e-28 and np.min(wave) >= 4.2644e-28 / 25 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
-                params_set = np.array([params]) if (
-                    i == 0) else np.vstack((params_set, params))
+                params_set[i] = params
                 flag = False
     return params_set
 
@@ -116,6 +117,7 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoin
 def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size, startpoint, endpoint, sample_rate):
     rng = np.random.default_rng()
     std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))
+    params_set = np.zeros(shape=(params_set_size, len(min_boundary)))
     for i in range(params_set_size):
         flag = True
         while flag:
@@ -128,33 +130,9 @@ def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, para
                             params[-1], sample_rate, params[:-1])
             wave_diff = np.diff(wave)
             if np.max(wave) <= 4.2644e-28 and np.min(wave) >= 4.2644e-28 / 25 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
-                params_set = np.array([params]) if (
-                    i == 0) else np.vstack((params_set, params))
+                params_set[i] = params
                 flag = False
     return params_set
-
-
-def get_remotest_params(min_boundary, max_boundary, train_params_set):
-    num_params = len(min_boundary)
-    # 对参数集合在每个维度上独立排序
-    params_sort = np.sort(train_params_set, axis=0)
-    # 补充上下限，方便索引
-    params_sort = np.vstack((min_boundary, params_sort))
-    params_sort = np.vstack((params_sort, max_boundary))
-    # 求每个维度的参数最大间距
-    params_diff = np.diff(params_sort, n=1, axis=0)
-    max_diff_indexs = np.argmax(params_diff, axis=0)
-    # 做一点扰动
-    cond = np.random.rand() < 0.8
-    max_diff_indexs = np.where(
-        cond, max_diff_indexs, np.random.randint(0, len(params_diff)))
-    # 计算最大间隔中的参数
-    low_indexs = (tuple(max_diff_indexs), tuple(i for i in range(num_params)))
-    high_indexs = (tuple(max_diff_indexs + 1),
-                   tuple(i for i in range(num_params)))
-    remotest_params = (params_sort[high_indexs] - params_sort[low_indexs]) / 2
-
-    return remotest_params
 
 
 if __name__ == '__main__':
