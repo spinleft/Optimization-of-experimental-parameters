@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from scipy import constants
 
 
 def get_dict_from_file(filename):
@@ -97,20 +98,24 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     plt.plot(t * tf, wave)
     plt.show()
 
+def params_continue_find(min_boundary, max_boundary, startpoint, endpoint, sample_rate, params):
+    K_0 = 12 * constants.Boltzmann * 1.5e-6
+    wave = waveform(startpoint, endpoint, params[-1], sample_rate, params[:-1])
+    wave_diff = np.diff(wave)
+    if np.max(wave) <= startpoint and np.min(wave) >= endpoint and np.max(np.abs(wave_diff)) < (startpoint - endpoint) / 20:
+        return False
+    else:
+        return True
 
 def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoint, endpoint, sample_rate):
     rng = np.random.default_rng()
     params_set = np.zeros(shape=(params_set_size, len(min_boundary)))
+    
     for i in range(params_set_size):
-        flag = True
-        while flag:
+        params = rng.uniform(min_boundary, max_boundary)
+        while params_continue_find(min_boundary, max_boundary, startpoint, endpoint, sample_rate, params):
             params = rng.uniform(min_boundary, max_boundary)
-            wave = waveform(startpoint, endpoint,
-                            params[-1], sample_rate, params[:-1])
-            wave_diff = np.diff(wave)
-            if np.max(wave) <= 4.2644e-28 and np.min(wave) >= 4.2644e-28 / 25 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
-                params_set[i] = params
-                flag = False
+        params_set[i] = params
     return params_set
 
 
@@ -119,19 +124,18 @@ def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, para
     std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))
     params_set = np.zeros(shape=(params_set_size, len(min_boundary)))
     for i in range(params_set_size):
-        flag = True
-        while flag:
+        params = rng.normal(base_params, std_dev_scale)
+        cond = params >= min_boundary
+        params = np.where(cond, params, min_boundary)
+        cond = params <= max_boundary
+        params = np.where(cond, params, max_boundary)
+        while params_continue_find(min_boundary, max_boundary, startpoint, endpoint, sample_rate, params):
             params = rng.normal(base_params, std_dev_scale)
             cond = params >= min_boundary
             params = np.where(cond, params, min_boundary)
             cond = params <= max_boundary
             params = np.where(cond, params, max_boundary)
-            wave = waveform(startpoint, endpoint,
-                            params[-1], sample_rate, params[:-1])
-            wave_diff = np.diff(wave)
-            if np.max(wave) <= 4.2644e-28 and np.min(wave) >= 4.2644e-28 / 25 and np.max(np.abs(wave_diff)) < 4.2644e-28 / 20:
-                params_set[i] = params
-                flag = False
+        params_set[i] = params
     return params_set
 
 
