@@ -99,7 +99,6 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     plt.show()
 
 def params_continue_find(min_boundary, max_boundary, startpoint, endpoint, sample_rate, params):
-    K_0 = 12 * constants.Boltzmann * 1.5e-6
     wave = waveform(startpoint, endpoint, params[-1], sample_rate, params[:-1])
     wave_diff = np.diff(wave)
     if np.max(wave) <= startpoint and np.min(wave) >= endpoint and np.max(np.abs(wave_diff)) < (startpoint - endpoint) / 20:
