@@ -64,6 +64,8 @@ class Interface():
             result_filename = os.path.join(
                 self.result_dir, str(self.result_index)+'.txt')
             temp = utilities.get_result_from_file(result_filename)
+            # 结果文件序号增一，准备读取下一个结果
+            self.result_index += 1
             # 计算cost
             bad = False
             cost = temp
@@ -87,9 +89,8 @@ class Interface():
                 # 计算cost
                 cost = temp
                 # bad = ...
-                self.params_index += 1
-            # 产生有效成本，结果文件序号增一
-            self.result_index += 1
+                self.result_index += 1
+            
             costs = np.hstack((costs, cost))
         return costs
 
