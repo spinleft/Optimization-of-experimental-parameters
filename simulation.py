@@ -37,7 +37,7 @@ def calculate_temperature(K_wave, sample_rate):
         mu_scaled = mu * energy_scale
         density_of_state_scale = 1 / (hbar_scaled * omega)**3
         # 牛顿迭代法求解beta和mu
-        print("t = %e: N = %f, E = %e"%(i * dt, N, E))
+        # print("t = %e: N = %f, E = %e"%(i * dt, N, E))
         beta_scaled, mu_scaled = calculate_beta_and_mu(N, E_scaled, K_scaled, beta_scaled, mu_scaled, density_of_state_scale)
         # 更新带量纲的beta和mu
         beta = beta_scaled * energy_scale
@@ -46,7 +46,7 @@ def calculate_temperature(K_wave, sample_rate):
         mu_list.append(mu)
         E_F = (6 * N)**(1/3) * hbar * omega
         T_over_TF = 1 / (beta * E_F)
-        print("beta = %e, mu = %e, T/T_F = %e"%(beta, mu, T_over_TF))
+        # print("beta = %e, mu = %e, T/T_F = %e"%(beta, mu, T_over_TF))
         # 计算各部分的N和E损失
         dN_1 = calculate_dN_1(K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0] * dt * m_scaled * sigma / (pi**2 * hbar_scaled**3)
         dE_1 = calculate_dE_1(K_scaled, beta_scaled, mu_scaled, density_of_state_scale)[0] * dt * m_scaled * sigma / (pi**2 * hbar_scaled**3)
