@@ -135,7 +135,7 @@ class Interface():
             wave = utilities.waveform(
                 self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
             cost = simulation.calculate_temperature(wave, self.sample_rate)
-            cost -= np.log(0.1)
+            cost = np.log(cost / 0.8)
             costs = np.hstack((costs, cost))
         return costs
 
