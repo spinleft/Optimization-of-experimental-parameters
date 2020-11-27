@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from scipy import constants
+from scipy import interpolate
 
 
 def get_dict_from_file(filename):
@@ -79,6 +80,15 @@ def waveform(startpoint, endpoint, tf, sample_rate, params):
     wave = startpoint * wave
     return wave
 
+def wave_interpolate(wave_old, tf, sample_rate_old, sample_rate_new):
+    t_step_old = 1. / sample_rate_old
+    t_old = np.arange(0, tf, t_step_old)
+    f = interpolate.interp1d(t_old, wave_old, kind='quadratic')
+    t_step_new = 1. / sample_rate_new
+    t_new = np.arange(0, t_old.max(), t_step_new)
+    wave_new = f(t_new)
+    return wave_new
+
 
 def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     num_params = len(params)
@@ -151,3 +161,12 @@ if __name__ == '__main__':
     
     # params = np.array([-0.5900328, 2.77703416, -1.31402892, 0.19818796, 0.64368691, -2.09109619, 1.1801839, 5.])
     plot_wave(4.2644e-28, 4.2644e-28 / 25, 15.71, 5000, params)
+    # tf = 5.
+    # sample_rate_old = 5000
+    # wave = waveform(10, 0, tf, sample_rate_old, params)
+    # plt.plot(np.linspace(0, tf, len(wave)), wave)
+    # plt.show()
+    # sample_rate_new = 20
+    # wave_new = wave_interpolate(wave, tf, sample_rate_old, sample_rate_new)
+    # plt.plot(np.linspace(0, tf, len(wave_new)), wave_new)
+    # plt.show()

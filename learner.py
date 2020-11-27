@@ -500,4 +500,4 @@ class Learner():
         plt.xlabel("Iteration")
         plt.ylabel("Cost")
         plt.plot(x_axis, self.best_costs_list)
-        plt.show()
+        plt.show(block=False)

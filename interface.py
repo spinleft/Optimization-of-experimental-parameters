@@ -18,7 +18,8 @@ class Interface():
         self.startpoint = 12 * constants.Boltzmann * 1.5e-6
         self.endpoint = self.startpoint / 25
         self.tf = 10
-        self.sample_rate = 20
+        self.sample_rate = 5000
+        self.experiment_sample_rate = 20
 
         # 训练参数
         self.initial_params_set_size = 20           # 初始实验数量
@@ -134,7 +135,8 @@ class Interface():
         for params in params_set:
             wave = utilities.waveform(
                 self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
-            cost = simulation.calculate_temperature(wave, self.sample_rate)
+            wave = utilities.wave_interpolate(wave, self.tf, self.sample_rate, self.experiment_sample_rate)
+            cost = simulation.calculate_temperature(wave, self.experiment_sample_rate)
             cost = np.log(cost / 0.08)
             costs = np.hstack((costs, cost))
         return costs
