@@ -134,12 +134,20 @@ def dE_1_kernel(z, y, x, beta, mu, density_of_state_scale):
     return 0.5 * (density_of_state_scale * x * y**2) / (1 + np.exp(beta * (x + y - z - mu))) / (1 + np.exp(beta * (z - mu))) / (1 + np.exp(-beta * (y - mu)))
 
 def calculate_dE_1(K, beta, mu, density_of_state_scale):
-    min_x = min(K, mu + 1800 / beta)
-    max_x = min(2 * K, mu + 1800 / beta)
-    min_y = lambda x: min(max(0, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
-    max_y = lambda x: min(max(2 * K - x, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
-    min_z = lambda x, y: max(min(x + y - K, mu + 600 / beta), x + y - (mu + 600 / beta))
-    max_z = lambda x, y: max(min(K, mu + 600 / beta), x + y - (mu + 600 / beta))
+    if beta > 0:
+        min_x = min(K, mu + 1800 / beta) if beta > 0 else max(0, mu + 1800 / beta)
+        max_x = min(2 * K, mu + 1800 / beta) if beta > 0 else max(2 * K, mu + 1800 / beta)
+        min_y = lambda x: min(max(0, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+        max_y = lambda x: min(max(2 * K - x, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+        min_z = lambda x, y: max(min(x + y - K, mu + 600 / beta), x + y - (mu + 600 / beta))
+        max_z = lambda x, y: max(min(K, mu + 600 / beta), x + y - (mu + 600 / beta))
+    else:
+        min_x = max(0, mu + 1800 / beta)
+        max_x = max(2 * K, mu + 1800 / beta)
+        min_y = lambda x: max(min(0, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+        max_y = lambda x: max(min(2 * K - x, mu - 600 / beta), (2 * mu + 1200 / beta) - x)
+        min_z = lambda x, y: min(max(x + y - K, mu + 600 / beta), x + y - (mu + 600 / beta))
+        max_z = lambda x, y: min(max(K, mu + 600 / beta), x + y - (mu + 600 / beta))
     return  integrate.tplquad(dE_1_kernel, min_x, max_x, min_y, max_y, min_z, max_z, args=(beta, mu, density_of_state_scale))
 
 def dN_3_kernel(x, beta, mu, density_of_state_scale):
