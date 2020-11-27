@@ -110,9 +110,9 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
 
 def params_continue_find(min_boundary, max_boundary, startpoint, endpoint, tf, sample_rate, params):
     wave = waveform(startpoint, endpoint, tf, sample_rate, params)
-    wave_diff = np.diff(wave) * sample_rate
-    if np.max(wave) <= startpoint and np.min(wave) >= endpoint and np.max(np.abs(wave_diff)) < abs(startpoint - endpoint) / tf * 50:
-    # if np.max(wave) <= startpoint and np.min(wave) >= endpoint:
+    # wave_diff = np.diff(wave) * sample_rate
+    # if np.max(wave) <= startpoint and np.min(wave) >= endpoint and np.max(np.abs(wave_diff)) < abs(startpoint - endpoint) / tf * 50:
+    if np.max(wave) <= startpoint and np.min(wave) >= endpoint:
         return False
     else:
         return True
