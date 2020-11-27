@@ -163,7 +163,7 @@ def main():
     T = 1.5e-6
     K_0 = 12 * kB * T
 
-    sample_rate = 100
+    sample_rate = 20
     tf = 10
     t_step = 1 / sample_rate
     t = np.arange(0., tf, t_step)

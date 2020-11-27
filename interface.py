@@ -18,7 +18,7 @@ class Interface():
         self.startpoint = 12 * constants.Boltzmann * 1.5e-6
         self.endpoint = self.startpoint / 25
         self.tf = 10
-        self.sample_rate = 100
+        self.sample_rate = 20
 
         # 训练参数
         self.initial_params_set_size = 20           # 初始实验数量
