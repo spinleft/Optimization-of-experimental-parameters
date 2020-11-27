@@ -263,7 +263,7 @@ class Learner():
         self.pool.join()
 
     def train(self):
-        patience_count = 0
+        patience_count = 1
         for i in range(self.last_iteration + 1, self.last_iteration + 1 + self.max_num_iteration):
             print("Iteration %d..." % i)
             # Step1: 训练神经网络
@@ -364,11 +364,11 @@ class Learner():
                 self.best_params = iteration_best_params
                 self.best_cost = iteration_best_cost
             # best_cost长时间不下降时，去除部分窗口参数，重置网络权重
-            if (iteration_best_cost <= self.best_costs_list[-self.max_patience:]).all():
-                patience_count = 0
+            if (iteration_best_cost <= self.best_costs_list[-patience_count:]).all():
+                patience_count = 1
             else:
                 patience_count += 1
-            if not patience_count < self.max_patience:
+            if patience_count > self.max_patience:
                 self.train_params_set = np.vstack(
                     (self.train_params_set, self.window_params_set[self.window_retain_size:]))
                 self.train_costs_set = np.hstack(
@@ -376,7 +376,7 @@ class Learner():
                 self.window_params_set = self.window_params_set[:self.window_retain_size]
                 self.window_costs_set = self.window_costs_set[:self.window_retain_size]
                 self._reset_neural_net()
-                patience_count = 0
+                patience_count = 1
             # 将本次循环的最好参数和结果加入列表
             self.best_params_list = np.vstack(
                 (self.best_params_list, iteration_best_params))
