@@ -12,18 +12,18 @@ class Interface():
     def __init__(self):
         # 实验参数
         self.target_cost = 0
-        self.num_params = 8
-        self.min_boundary = [-3., -3., -3., -3., -3., -3., -3., 5.]
-        self.max_boundary = [3., 3., 3., 3., 3., 3., 3., 20.]
-        self.startpoint = 12 * constants.Boltzmann * 1.5e-6
-        self.endpoint = self.startpoint / 25
-        # self.tf = 15.71
-        self.sample_rate = 20
+        self.num_params = 7
+        self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
+        self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
+        self.startpoint = 10
+        self.endpoint = 0
+        self.tf = 15.71
+        self.sample_rate = 5000
 
         # 训练参数
         self.initial_params_set_size = 20           # 初始实验数量
-        self.predict_good_params_set_size = 200     # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量，选择一个作为下一次实验参数
-        self.predict_random_params_set_size = 2000  # 每次迭代，生成均匀分布参数数量
+        self.predict_good_params_set_size = 100     # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量，选择一个作为下一次实验参数
+        self.predict_random_params_set_size = 1000  # 每次迭代，生成均匀分布参数数量
         self.select_random_params_set_size = 10     # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
         self.window_size = 10                       # 窗口最大大小
         self.max_num_iteration = 100                # 最大迭代次数
@@ -42,7 +42,7 @@ class Interface():
         self.load_archive_datetime = None
 
     def get_experiment_costs(self, params_set):
-        return self.get_experiment_costs_simulation(params_set)
+        return self.get_experiment_costs_test(params_set)
 
     def get_experiment_costs_vapor(self, params_set):
         costs = np.array([], dtype=float)
@@ -94,38 +94,38 @@ class Interface():
             costs = np.hstack((costs, cost))
         return costs
 
-    # def get_experiment_costs_test(self, params_set):
-    #     costs = np.array([], dtype=float)
-    #     for params in params_set:
-    #         k = 5.0
-    #         g = 9.8
-    #         x_step = 1.0 / self.sample_rate
-    #         xmax = 15.71
-    #         x = np.arange(0, xmax, x_step)
-    #         len_x = len(x)
-    #         t = 0
-    #         bad = False
-    #         wave = utilities.waveform(
-    #             self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
-    #         for i in range(1, len_x):
-    #             if wave[i] > 10.0 or wave[i] == float('nan'):
-    #                 bad = True
-    #                 break
-    #             else:
-    #                 v_i = np.sqrt(2 * g * (10.0 - wave[i - 1]))
-    #                 s = np.sqrt((x[i] - x[i - 1]) ** 2 +
-    #                             (wave[i - 1] - wave[i]) ** 2)
-    #                 a = (wave[i - 1] - wave[i]) / s
-    #                 if np.abs(a) < 1e-15:
-    #                     t += s / v_i
-    #                 else:
-    #                     t += (np.sqrt(v_i ** 2 + 2 * a * s) - v_i) / a
-    #         min_time = np.pi * np.sqrt(k / g)
-    #         if not bad:
-    #             costs = np.hstack((costs, t - min_time))
-    #         else:
-    #             costs = np.hstack((costs, 1000.0))
-    #     return costs
+    def get_experiment_costs_test(self, params_set):
+        costs = np.array([], dtype=float)
+        for params in params_set:
+            k = 5.0
+            g = 9.8
+            x_step = 1.0 / self.sample_rate
+            xmax = 15.71
+            x = np.arange(0, xmax, x_step)
+            len_x = len(x)
+            t = 0
+            bad = False
+            wave = utilities.waveform(
+                self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
+            for i in range(1, len_x):
+                if wave[i] > 10.0 or wave[i] == float('nan'):
+                    bad = True
+                    break
+                else:
+                    v_i = np.sqrt(2 * g * (10.0 - wave[i - 1]))
+                    s = np.sqrt((x[i] - x[i - 1]) ** 2 +
+                                (wave[i - 1] - wave[i]) ** 2)
+                    a = (wave[i - 1] - wave[i]) / s
+                    if np.abs(a) < 1e-15:
+                        t += s / v_i
+                    else:
+                        t += (np.sqrt(v_i ** 2 + 2 * a * s) - v_i) / a
+            min_time = np.pi * np.sqrt(k / g)
+            if not bad:
+                costs = np.hstack((costs, t - min_time))
+            else:
+                costs = np.hstack((costs, 1000.0))
+        return costs
 
     def get_experiment_costs_simulation(self, params_set):
         costs = np.array([], dtype=float)
