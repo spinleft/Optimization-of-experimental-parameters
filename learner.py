@@ -225,7 +225,7 @@ class Learner():
         print("Iteration %d..." % self.last_iteration)
         self.init_params_set = np.array(self.archive['save_params_set'])
         self.init_costs_set = self.get_experiment_costs(
-            self.train_params_set)
+            self.init_params_set)
 
         # 筛选好的参数放入窗口，最多不超过初始参数的一半
         max_size = min(self.window_size, len(self.init_costs_set) // 2)
