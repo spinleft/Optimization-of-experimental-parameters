@@ -162,8 +162,8 @@ def dE_3_kernel(x, beta, mu, density_of_state_scale):
     return 0.5 * (density_of_state_scale * x**3) / (1 + np.exp(beta * (x - mu)))
 
 def calculate_dE_3(K_prime, K, beta, mu, density_of_state_scale):
-    lower_limit = min(K_prime, mu + 600 / beta)
-    upper_limit = min(K, mu + 600 / beta)
+    lower_limit = min(K_prime, mu + 600 / beta) if beta > 0 else max(K_prime, mu + 600 / beta)
+    upper_limit = min(K, mu + 600 / beta) if beta > 0 else max(K, mu + 600 / beta)
     return integrate.quad(dE_3_kernel, lower_limit, upper_limit, args=(beta, mu, density_of_state_scale))
 
 def main():
