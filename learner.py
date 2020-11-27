@@ -131,7 +131,9 @@ class Learner():
     def init(self):
         # 随机产生一组参数，获取实验结果
         print("Iteration 0...")
+        print("Getting initial parameters...")
         self.init_params_set = self.get_init_params()
+        print("Getting experiment costs...")
         self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
 
