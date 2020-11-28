@@ -41,12 +41,14 @@ class Learner():
         self.predict_good_params_set_size = interface.predict_good_params_set_size
         self.predict_random_params_set_size = interface.predict_random_params_set_size
         self.select_random_params_set_size = interface.select_random_params_set_size
+        self.select_good_params_set_size = np.array(interface.select_good_params_set_size)
+        self.good_params_set_size_cumsum = np.cumsum(self.select_good_params_set_size)  # 计算参数数量的累加
         self.window_size = interface.window_size
         self.max_num_iteration = interface.max_num_iteration
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 10       # 初始化神经网络时尝试随机权重的次数
         self.reset_net_weight_num = 20      # 重置权重时尝试随机权重的次数
-        self.max_patience = 20              # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
+        self.max_patience = 15              # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
         self.window_retain_size = 2         # 抛弃窗口参数时保留的参数数量
         self.std_dev = 0.03                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
 
@@ -292,9 +294,9 @@ class Learner():
             # 对每个窗口参数，选出基于它产生的最好的参数
             select_good_params_set = []
             for j in range(len(self.window_params_set)):
-                index = np.argmin(predict_good_costs_sets[j])
+                indexes = np.argsort(predict_good_costs_sets[j])
                 select_good_params_set.append(
-                    predict_good_params_sets[j][index])
+                    predict_good_params_sets[j][indexes[:self.select_good_params_set_size[j]]])
             select_good_params_set = np.array(select_good_params_set)
             # 选出若干最好的随机生成的参数
             indexes = np.argsort(predict_random_costs_set)
@@ -308,14 +310,20 @@ class Learner():
                 select_random_params_set)
 
             # 将select_good_params_set替换入window_params_set或放入train_params_set
+            label = 0
             for j in range(len(select_good_params_set)):
-                if select_good_costs_set[j] < self.window_costs_set[j]:
+                while True:
+                    if j >= self.good_params_set_size_cumsum[label]:
+                        label += 1
+                    else:
+                        break
+                if select_good_costs_set[j] < self.window_costs_set[label]:
                     self.train_params_set = np.vstack(
-                        (self.train_params_set, self.window_params_set[j]))
+                        (self.train_params_set, self.window_params_set[label]))
                     self.train_costs_set = np.hstack(
-                        (self.train_costs_set, self.window_costs_set[j]))
-                    self.window_params_set[j] = select_good_params_set[j]
-                    self.window_costs_set[j] = select_good_costs_set[j]
+                        (self.train_costs_set, self.window_costs_set[label]))
+                    self.window_params_set[label] = select_good_params_set[j]
+                    self.window_costs_set[label] = select_good_costs_set[j]
                 else:
                     self.train_params_set = np.vstack(
                         (self.train_params_set, select_good_params_set[j]))
@@ -371,12 +379,19 @@ class Learner():
             else:
                 patience_count += 1
             if patience_count > self.max_patience:
+                # 重做一遍实验，避免偶然因素
+                self.window_costs_set = self.get_experiment_costs(self.window_params_set)
+                indexes = np.argsort(self.window_costs_set)
+                self.window_params_set = self.window_params_set[indexes]
+                self.window_costs_set = self.window_costs_set[indexes]
+                # 将部分窗口参数划入训练参数集
                 self.train_params_set = np.vstack(
                     (self.train_params_set, self.window_params_set[self.window_retain_size:]))
                 self.train_costs_set = np.hstack(
                     (self.train_costs_set, self.window_costs_set[self.window_retain_size:]))
                 self.window_params_set = self.window_params_set[:self.window_retain_size]
                 self.window_costs_set = self.window_costs_set[:self.window_retain_size]
+                # 重置网络权重
                 self._reset_neural_net()
                 patience_count = 1
             # 将本次循环的最好参数和结果加入列表

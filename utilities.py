@@ -81,11 +81,10 @@ def waveform(startpoint, endpoint, tf, sample_rate, params):
     return wave
 
 def wave_interpolate(wave_old, tf, sample_rate_old, sample_rate_new):
-    t_step_old = 1. / sample_rate_old
-    t_old = np.arange(0, tf, t_step_old)
+    t_old = np.linspace(0, tf, len(wave_old))
     f = interpolate.interp1d(t_old, wave_old, kind='quadratic')
     t_step_new = 1. / sample_rate_new
-    t_new = np.arange(0, t_old.max(), t_step_new)
+    t_new = np.arange(0, tf, t_step_new)
     wave_new = f(t_new)
     return wave_new
 
@@ -167,11 +166,12 @@ if __name__ == '__main__':
     # params = np.array([-1.25691566, 1.64684315, -0.79104391, -3., 1.73756398, -1.89891462, 0.78546396])
     # 数值模拟
     # params = np.array([1.45977357, 0.67831924, -0.58728008, 0.51803271, 2.7090874, -0.60886192, -1.87649613])
-    # plot_wave(10, 0, 15.71, 50000, params)
-    x = np.linspace(0, 1, 1000)
-    y1 = np.power(x, 1/5)
-    y2 = np.log2((1 + 511 * x)**(1/9))
-    plt.plot(x, y1, label='y1')
-    plt.plot(x, y2, label='y2')
-    plt.legend()
-    plt.show()
+    params = np.array([-0.7731549, 2.37740935, -1.10149516, 1.21756425, -1.92132965, 2.01018562, -1.4132155])
+    plot_wave(1, 0, 1, 50000, params)
+    # x = np.linspace(0, 1, 1000)
+    # y1 = np.power(x, 1/5)
+    # y2 = np.log2((1 + 511 * x)**(1/9))
+    # plt.plot(x, y1, label='y1')
+    # plt.plot(x, y2, label='y2')
+    # plt.legend()
+    # plt.show()
