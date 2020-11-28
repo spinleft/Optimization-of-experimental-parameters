@@ -297,7 +297,7 @@ class Learner():
                 indexes = np.argsort(predict_good_costs_sets[j])
                 select_good_params_set.append(
                     predict_good_params_sets[j][indexes[:self.select_good_params_set_size[j]]])
-            select_good_params_set = np.array(select_good_params_set)
+            select_good_params_set = np.vstack(select_good_params_set)
             # 选出若干最好的随机生成的参数
             indexes = np.argsort(predict_random_costs_set)
             select_random_params_set = np.array(
