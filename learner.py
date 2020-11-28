@@ -392,10 +392,10 @@ class Learner():
                                  'last_iteration': i})
             # 存档
             self._save_archive()
-            print("The best params in iteration " + str(i) +
-                  " is: " + str(iteration_best_params))
-            print("The best cost in iteration " + str(i) +
-                  " is: " + str(iteration_best_cost))
+            print("The best params in iteration %d: "%i)
+            print(iteration_best_params)
+            print("The best cost in iteration %d: "%i)
+            print(iteration_best_cost)
             print("window_cost_set:")
             print(self.window_costs_set)
 
