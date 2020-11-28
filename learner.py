@@ -393,7 +393,7 @@ class Learner():
                 self.window_costs_set = self.window_costs_set[:self.window_retain_size]
                 # 重置网络权重
                 self._reset_neural_net()
-                patience_count = 1
+                patience_count = 0
             # 将本次循环的最好参数和结果加入列表
             self.best_params_list = np.vstack(
                 (self.best_params_list, iteration_best_params))
