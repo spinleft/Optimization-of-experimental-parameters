@@ -76,7 +76,7 @@ def waveform(startpoint, endpoint, tf, sample_rate, params):
     wave = np.ones(len(t))
     for i in range(l):
         wave = wave + coef[i] * np.power(t, i+1) + \
-            coef[l+i] * np.log2(1 + np.power(2, 2 * i + 3) * t) / (2 * i + 3)
+            coef[l+i] * np.log2(1 + (np.power(2, 2*i+3) - 1) * t) / (2 * i + 3)
     wave = startpoint * wave
     return wave
 
@@ -100,7 +100,7 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     wave = np.ones(len(t))
     for i in range(l):
         wave = wave + coef[i] * np.power(t, i+1) + \
-            coef[l+i] * np.power(t, 1/float(i+2))
+            coef[l+i] * np.log2(1 + (np.power(2, 2*i+3) - 1) * t) / (2 * i + 3)
     wave = startpoint * wave
 
     plt.xlabel("t")
@@ -109,11 +109,20 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     plt.show()
 
 def params_continue_find(min_boundary, max_boundary, startpoint, endpoint, tf, sample_rate, params):
-    wave = waveform(startpoint, endpoint, tf, sample_rate, params)
-    # wave_diff = np.diff(wave) * sample_rate
-    # if np.max(wave) <= startpoint and np.min(wave) >= endpoint and np.max(np.abs(wave_diff)) < abs(startpoint - endpoint) / tf * 50:
-    if np.max(wave) <= startpoint and np.min(wave) >= endpoint:
-        return False
+    # 限制初始斜率
+    a_1 = endpoint / startpoint - 1 - np.sum(params)
+    coef = np.hstack((a_1, params))
+    l = int((len(params) + 1) / 2)
+    slope = coef[0]
+    for i in range(l):
+        slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
+    if slope <= 0 and abs(slope) < abs(1 - endpoint / startpoint) * 100:
+        # 限制上下限
+        wave = waveform(startpoint, endpoint, tf, sample_rate, params)
+        if np.max(wave) <= startpoint and np.min(wave) >= endpoint:
+            return False
+        else:
+            return True
     else:
         return True
 
