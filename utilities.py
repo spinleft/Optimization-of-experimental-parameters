@@ -76,7 +76,7 @@ def waveform(startpoint, endpoint, tf, sample_rate, params):
     wave = np.ones(len(t))
     for i in range(l):
         wave = wave + coef[i] * np.power(t, i+1) + \
-            coef[l+i] * np.power(t, 1/float(i+2))
+            coef[l+i] * np.log2(1 + np.power(2, 2 * i + 3) * t) / (2 * i + 3)
     wave = startpoint * wave
     return wave
 
@@ -155,18 +155,14 @@ if __name__ == '__main__':
     # params = np.array([1.32179176, -1.21398091, 0.74667593, -2.54193118, 2.35885283, -1.54051139, 0.43814302])  # 0.038674916857825536
     # params = np.array([-0.70461515, 1.39923573, -0.65270201, -2.51971808, 2.09282611, -1.92157829, 0.68268599])
     # params = np.array([-0.7670372, 1.53994717, -0.71413151, -2.81321045, 2.22119171, -1.8959186, 0.67939656])
-    params = np.array([-1.25691566, 1.64684315, -0.79104391, -3., 1.73756398, -1.89891462, 0.78546396])
-    # params = np.array([0.62040317, 1.1948361, -0.59836405, -0.10365333, -0.79325315, 2.10052768, -1.23012641, 4.14534571])
-    # params = np.array([1.94977766, 2.60590206, -2.7299242, -1.60359176, -1.16171635, 2.38431112, -0.98774287, 3.16765493])
-    
-    # params = np.array([-0.5900328, 2.77703416, -1.31402892, 0.19818796, 0.64368691, -2.09109619, 1.1801839, 5.])
-    plot_wave(4.2644e-28, 4.2644e-28 / 25, 15.71, 5000, params)
-    # tf = 5.
-    # sample_rate_old = 5000
-    # wave = waveform(10, 0, tf, sample_rate_old, params)
-    # plt.plot(np.linspace(0, tf, len(wave)), wave)
-    # plt.show()
-    # sample_rate_new = 20
-    # wave_new = wave_interpolate(wave, tf, sample_rate_old, sample_rate_new)
-    # plt.plot(np.linspace(0, tf, len(wave_new)), wave_new)
-    # plt.show()
+    # params = np.array([-1.25691566, 1.64684315, -0.79104391, -3., 1.73756398, -1.89891462, 0.78546396])
+    # 数值模拟
+    # params = np.array([1.45977357, 0.67831924, -0.58728008, 0.51803271, 2.7090874, -0.60886192, -1.87649613])
+    # plot_wave(10, 0, 15.71, 50000, params)
+    x = np.linspace(0, 1, 1000)
+    y1 = np.power(x, 1/5)
+    y2 = np.log2((1 + 511 * x)**(1/9))
+    plt.plot(x, y1, label='y1')
+    plt.plot(x, y2, label='y2')
+    plt.legend()
+    plt.show()
