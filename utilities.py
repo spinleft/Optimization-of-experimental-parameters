@@ -80,7 +80,7 @@ def waveform(startpoint, endpoint, tf, sample_rate, params):
     wave = startpoint * wave
     return wave
 
-def wave_interpolate(wave_old, tf, sample_rate_old, sample_rate_new):
+def wave_interpolate(wave_old, tf, sample_rate_new):
     t_old = np.linspace(0, tf, len(wave_old))
     f = interpolate.interp1d(t_old, wave_old, kind='quadratic')
     t_step_new = 1. / sample_rate_new
@@ -115,7 +115,7 @@ def params_continue_find(min_boundary, max_boundary, startpoint, endpoint, tf, s
     slope = coef[0]
     for i in range(l):
         slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
-    if slope <= 0 and abs(slope) < abs(1 - endpoint / startpoint) * 100:
+    if slope <= 0 and abs(slope) < abs(1 - endpoint / startpoint) * 50:
         # 限制上下限
         wave = waveform(startpoint, endpoint, tf, sample_rate, params)
         if np.max(wave) <= startpoint and np.min(wave) >= endpoint:
@@ -166,8 +166,8 @@ if __name__ == '__main__':
     # params = np.array([-1.25691566, 1.64684315, -0.79104391, -3., 1.73756398, -1.89891462, 0.78546396])
     # 数值模拟
     # params = np.array([1.45977357, 0.67831924, -0.58728008, 0.51803271, 2.7090874, -0.60886192, -1.87649613])
-    params = np.array([1.31660284, -1.86291042, 0.63433084, -3., -0.92098302, 2.43446957, -1.17676437])
-    plot_wave(1, 0, 1, 50000, params)
+    params = np.array([1.67029726, -1.42342509, 0.31565907, -2.92663928, -0.77029338, 2.77111837, -1.32304071])
+    plot_wave(1, 0, 1, 5000, params)
     # x = np.linspace(0, 1, 1000)
     # y1 = np.power(x, 1/5)
     # y2 = np.log2((1 + 511 * x)**(1/9))
