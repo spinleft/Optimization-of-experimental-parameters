@@ -13,8 +13,8 @@ class Interface():
         # 实验参数
         self.target_cost = 0
         self.num_params = 7
-        self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
-        self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
+        self.min_boundary = [-3., -3., -3., -4., -4., -4., -4.]
+        self.max_boundary = [3., 3., 3., 4., 4., 4., 4.]
         self.startpoint = 12 * constants.Boltzmann * 1.5e-6
         self.endpoint = self.startpoint / 25
         self.tf = 10
