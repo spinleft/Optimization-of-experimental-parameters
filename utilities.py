@@ -107,19 +107,19 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     plt.plot(t * tf, wave)
     plt.show()
 
-def params_continue_find(min_boundary, max_boundary, startpoint, endpoint, tf, sample_rate, params):
+def params_continue_find(params):
     # 限制初始斜率
-    a_1 = endpoint / startpoint - 1 - np.sum(params)
+    a_1 = -1 - np.sum(params)
     coef = np.hstack((a_1, params))
     l = int((len(params) + 1) / 2)
     slope = coef[0]
     for i in range(l):
         slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
-    if slope <= 0 and abs(slope) < abs(1 - endpoint / startpoint) * 50:
+    if slope <= 0 and abs(slope) < 50:
         # 限制上下限
-        wave = waveform(startpoint, endpoint, tf, sample_rate, params)
-        wave_diff = np.diff(wave)
-        if np.max(wave) <= startpoint and np.min(wave) >= endpoint and (wave_diff <= 0).all():
+        wave = waveform(1, 0, 1, 5000, params)
+        wave_diff = np.diff(wave) * 5000
+        if np.max(wave) <= 1 and np.min(wave) >= 0 and (wave_diff <= 0).all():
             return False
         else:
             return True
@@ -132,7 +132,7 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size, startpoin
     
     for i in range(params_set_size):
         params = rng.uniform(min_boundary, max_boundary)
-        while params_continue_find(min_boundary, max_boundary, startpoint, endpoint, tf, sample_rate, params):
+        while params_continue_find(params):
             params = rng.uniform(min_boundary, max_boundary)
         params_set[i] = params
     return params_set
@@ -148,7 +148,7 @@ def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, para
         params = np.where(cond, params, min_boundary)
         cond = params <= max_boundary
         params = np.where(cond, params, max_boundary)
-        while params_continue_find(min_boundary, max_boundary, startpoint, endpoint, tf, sample_rate, params):
+        while params_continue_find(params):
             params = rng.normal(base_params, std_dev_scale)
             cond = params >= min_boundary
             params = np.where(cond, params, min_boundary)
@@ -169,10 +169,11 @@ if __name__ == '__main__':
     # params = np.array([1.45977357, 0.67831924, -0.58728008, 0.51803271, 2.7090874, -0.60886192, -1.87649613])
     # params = np.array([1.53569274, 1.97344643, -1.31129392, 3., 0.85330547, -3., 0.81725298])   # 0.05954534
     # params = np.array([1.27987736, 2.28957164, -1.38378197, 3.,          1.06099137, -2.97176395, 0.76509959])
+    params = np.array([-2.71898154, -0.22467944, 1.00072299, 1.18886061, -2.84190435, 0.36511431, -0.03863528])
     # wave = waveform(1, 0, 1, 50000, params)
     # 随机
-    min_boundary = np.array([-3., -3., -3., -5., -5., -5., -5.])
-    max_boundary = np.array([3., 3., 3., 5., 5., 5., 5.])
+    min_boundary = np.array([-3., -3., -3., -4., -4., -4., -4.])
+    max_boundary = np.array([3., 3., 3., 4., 4., 4., 4.])
     params = get_random_params_set(min_boundary, max_boundary, 100, 4.5, 0, 3, 1000)[0]
     plot_wave(4.5, 0, 3, 50000, params)
     # x = np.linspace(0, 1, 1000)
