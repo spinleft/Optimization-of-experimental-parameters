@@ -30,7 +30,7 @@ class Learner():
         # 神经网络超参数
         self.layer_dims = [64] * 5
         # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
-        self.train_threshold_ratio = 0.01
+        self.train_threshold_ratio = 0.015
         self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
@@ -50,7 +50,7 @@ class Learner():
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 10       # 初始化神经网络时尝试随机权重的次数
         self.reset_net_weight_num = 20      # 重置权重时尝试随机权重的次数
-        self.max_patience = 10              # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
+        self.max_patience = 8               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
         self.window_retain_size = 2         # 抛弃窗口参数时保留的参数数量
         self.std_dev = 0.03                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
 
