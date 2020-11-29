@@ -492,7 +492,7 @@ class Learner():
         # 聚类后取每一类中结果最好的参数
         self.k_means.fit(temp_params_set)
         labels = self.k_means.predict(temp_params_set)
-        for i in range(self.save_params_set_size):
+        for i in range(clusters):
             params_subset = temp_params_set[labels == i]
             costs_subset = temp_costs_set[labels == i]
             index = np.argmin(costs_subset)
