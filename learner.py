@@ -41,8 +41,10 @@ class Learner():
         self.predict_good_params_set_size = interface.predict_good_params_set_size
         self.predict_random_params_set_size = interface.predict_random_params_set_size
         self.select_random_params_set_size = interface.select_random_params_set_size
-        self.select_good_params_set_size = np.array(interface.select_good_params_set_size)
-        self.good_params_set_size_cumsum = np.cumsum(self.select_good_params_set_size)  # 计算参数数量的累加
+        self.select_good_params_set_size = np.array(
+            interface.select_good_params_set_size)
+        self.good_params_set_size_cumsum = np.cumsum(
+            self.select_good_params_set_size)  # 计算参数数量的累加
         self.window_size = interface.window_size
         self.max_num_iteration = interface.max_num_iteration
         self.save_params_set_size = interface.save_params_set_size
@@ -154,11 +156,7 @@ class Learner():
         self.best_costs_list = np.array([self.best_cost], dtype=float)
         self.last_iteration = 0
         # 记入档案
-        self.archive.update({'best_params_list': self.best_params_list,
-                             'best_costs_list': self.best_cost,
-                             'best_params': self.best_params,
-                             'best_cost': self.best_cost,
-                             'last_iteration': self.last_iteration})
+        self.archive.update({'last_iteration': self.last_iteration})
 
         # 随机初始化神经网络，选择训练后 loss 最小的网络
         print("Initializing net...")
@@ -247,11 +245,7 @@ class Learner():
         self.best_costs_list = np.hstack(
             (self.best_costs_list, self.best_cost))
         # 更新档案
-        self.archive.update({'best_params_list': self.best_params_list,
-                             'best_costs_list': self.best_costs_list,
-                             'best_params': self.best_params,
-                             'best_cost': self.best_cost,
-                             'last_iteration': self.last_iteration})
+        self.archive.update({'last_iteration': self.last_iteration})
         # 加载神经网络
         load_neural_net_archive_filename = self.archive['neural_net_archive_filename']
         self.net = neuralnet.NeuralNet(self.min_boundary,
@@ -380,7 +374,8 @@ class Learner():
                 patience_count += 1
             if patience_count > self.max_patience:
                 # 重做一遍实验，避免偶然因素
-                self.window_costs_set = self.get_experiment_costs(self.window_params_set)
+                self.window_costs_set = self.get_experiment_costs(
+                    self.window_params_set)
                 indexes = np.argsort(self.window_costs_set)
                 self.window_params_set = self.window_params_set[indexes]
                 self.window_costs_set = self.window_costs_set[indexes]
@@ -400,16 +395,12 @@ class Learner():
             self.best_costs_list = np.hstack(
                 (self.best_costs_list, iteration_best_cost))
             # 更新档案
-            self.archive.update({'best_params_list': self.best_params_list,
-                                 'best_costs_list': self.best_costs_list,
-                                 'best_params': self.best_params,
-                                 'best_cost': self.best_cost,
-                                 'last_iteration': i})
+            self.archive.update({'last_iteration': i})
             # 存档
             self._save_archive()
-            print("The best params in iteration %d: "%i)
+            print("The best params in iteration %d: " % i)
             print(iteration_best_params)
-            print("The best cost in iteration %d: "%i)
+            print("The best cost in iteration %d: " % i)
             print(iteration_best_cost)
             print("window_cost_set:")
             print(self.window_costs_set)
@@ -494,8 +485,10 @@ class Learner():
     def _save_archive(self):
         save_params_set = None
         # K-聚类获得典型参数
-        temp_params_set = np.vstack((self.window_params_set, self.train_params_set))
-        temp_costs_set = np.hstack((self.window_costs_set, self.train_costs_set))
+        temp_params_set = np.vstack(
+            (self.window_params_set, self.train_params_set))
+        temp_costs_set = np.hstack(
+            (self.window_costs_set, self.train_costs_set))
         self.k_means.fit(temp_params_set)
         labels = self.k_means.predict(temp_params_set)
         for i in range(self.save_params_set_size):
@@ -507,8 +500,14 @@ class Learner():
             else:
                 save_params_set = np.vstack(
                     (save_params_set, params_subset[index]))
-        self.archive.update({'save_params_set': save_params_set})
-        self.archive.update({'neural_net_archive_filename': self.net.save()})
+        self.archive.update({'history_params_list': temp_params_set,
+                             'history_costs_list': temp_costs_set,
+                             'best_params_list': self.best_params_list,
+                             'best_costs_list': self.best_cost,
+                             'best_params': self.best_params,
+                             'best_cost': self.best_cost,
+                             'save_params_set': save_params_set,
+                             'neural_net_archive_filename': self.net.save()})
         utilities.save_dict_to_txt_file(self.archive, self.archive_filename)
 
     def plot_best_costs_list(self):
