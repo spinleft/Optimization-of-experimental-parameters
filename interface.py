@@ -140,7 +140,7 @@ class Interface():
             # wave = np.hstack((wave, self.endpoint))
             # wave = utilities.wave_interpolate(wave, self.tf, self.experiment_sample_rate)
             cost = simulation.calculate_temperature(wave, self.experiment_sample_rate)
-            cost += cost * np.random.normal(0, 0.1)
+            cost += cost * np.random.normal(0, 0.05)
             cost = np.log(cost / 0.08)
             costs = np.hstack((costs, cost))
         return costs
