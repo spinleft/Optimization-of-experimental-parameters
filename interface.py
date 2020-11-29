@@ -13,8 +13,8 @@ class Interface():
         # 实验参数
         self.target_cost = 0
         self.num_params = 7
-        self.min_boundary = [-3., -3., -3., -4., -4., -4., -4.]
-        self.max_boundary = [3., 3., 3., 4., 4., 4., 4.]
+        self.min_boundary = [-3., -3., -3., -5., -5., -5., -5.]
+        self.max_boundary = [3., 3., 3., 5., 5., 5., 5.]
         self.startpoint = 12 * constants.Boltzmann * 1.5e-6
         self.endpoint = self.startpoint / 25
         self.tf = 10
@@ -22,9 +22,9 @@ class Interface():
         self.experiment_sample_rate = 20                    # 输出到实验的实际采样率
 
         # 训练参数
-        self.initial_params_set_size = 10                   # 初始实验数量
-        self.predict_good_params_set_size = 1000            # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
-        self.predict_random_params_set_size = 10000         # 每次迭代，生成均匀分布参数数量
+        self.initial_params_set_size = 20                   # 初始实验数量
+        self.predict_good_params_set_size = 200             # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
+        self.predict_random_params_set_size = 2000          # 每次迭代，生成均匀分布参数数量
         self.select_random_params_set_size = 2              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
         self.window_size = 4                                # 窗口最大大小
         self.select_good_params_set_size = [4, 2, 1, 1]  # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数

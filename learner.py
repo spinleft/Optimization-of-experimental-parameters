@@ -50,7 +50,7 @@ class Learner():
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 10       # 初始化神经网络时尝试随机权重的次数
         self.reset_net_weight_num = 20      # 重置权重时尝试随机权重的次数
-        self.max_patience = 6               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
+        self.max_patience = 8               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
         self.window_retain_size = 2         # 抛弃窗口参数时保留的参数数量
         self.std_dev = 0.06                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
 

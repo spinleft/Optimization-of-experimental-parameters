@@ -118,7 +118,8 @@ def params_continue_find(min_boundary, max_boundary, startpoint, endpoint, tf, s
     if slope <= 0 and abs(slope) < abs(1 - endpoint / startpoint) * 50:
         # 限制上下限
         wave = waveform(startpoint, endpoint, tf, sample_rate, params)
-        if np.max(wave) <= startpoint and np.min(wave) >= endpoint:
+        wave_diff = np.diff(wave)
+        if np.max(wave) <= startpoint and np.min(wave) >= endpoint and (wave_diff <= 0).all():
             return False
         else:
             return True
@@ -166,13 +167,14 @@ if __name__ == '__main__':
     # params = np.array([-1.25691566, 1.64684315, -0.79104391, -3., 1.73756398, -1.89891462, 0.78546396])
     # 数值模拟
     # params = np.array([1.45977357, 0.67831924, -0.58728008, 0.51803271, 2.7090874, -0.60886192, -1.87649613])
-    params = np.array([3., 2.49940923, -1.7975774, 1.81492608, 3., -2.41901695, 0.48602776])
+    # params = np.array([1.53569274, 1.97344643, -1.31129392, 3., 0.85330547, -3., 0.81725298])   # 0.05954534
+    # params = np.array([1.27987736, 2.28957164, -1.38378197, 3.,          1.06099137, -2.97176395, 0.76509959])
     # wave = waveform(1, 0, 1, 50000, params)
     # 随机
-    # min_boundary = np.array([-3., -3., -3., -3., -3., -3., -3., -3., -3.])
-    # max_boundary = np.array([3., 3., 3., 3., 3., 3., 3., 3., 3.])
-    # params = get_random_params_set(min_boundary, max_boundary, 5, 4.5, 0, 3, 5000)[0]
-    plot_wave(4.5, 0, 3, 5000, params)
+    min_boundary = np.array([-3., -3., -3., -5., -5., -5., -5.])
+    max_boundary = np.array([3., 3., 3., 5., 5., 5., 5.])
+    params = get_random_params_set(min_boundary, max_boundary, 100, 4.5, 0, 3, 1000)[0]
+    plot_wave(4.5, 0, 3, 50000, params)
     # x = np.linspace(0, 1, 1000)
     # y1 = np.power(x, 1/5)
     # y2 = np.log2((1 + 511 * x)**(1/9))
