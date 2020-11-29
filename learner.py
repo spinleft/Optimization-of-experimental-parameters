@@ -52,7 +52,7 @@ class Learner():
         self.reset_net_weight_num = 20      # 重置权重时尝试随机权重的次数
         self.max_patience = 8               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
         self.window_retain_size = 2         # 抛弃窗口参数时保留的参数数量
-        self.std_dev = 0.03                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
+        self.std_dev = 0.06                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
 
         # 训练文件
         self.archive_dir = interface.archive_dir                    # 存档目录
@@ -74,10 +74,6 @@ class Learner():
                         'dropout_prob': self.dropout_prob,
                         'regularisation_coefficient': self.regularisation_coefficient
                         }
-
-        # 构造聚类器
-        self.k_means = KMeans(
-            n_clusters=self.save_params_set_size, max_iter=1000)
 
         # 创建进程池
         self.num_cores = os.cpu_count()
@@ -489,6 +485,11 @@ class Learner():
             (self.window_params_set, self.train_params_set))
         temp_costs_set = np.hstack(
             (self.window_costs_set, self.train_costs_set))
+        # 构造聚类器
+        clusters = min(self.save_params_set_size, len(temp_costs_set))
+        self.k_means = KMeans(
+            n_clusters=clusters, max_iter=1000)
+        # 聚类后取每一类中结果最好的参数
         self.k_means.fit(temp_params_set)
         labels = self.k_means.predict(temp_params_set)
         for i in range(self.save_params_set_size):
