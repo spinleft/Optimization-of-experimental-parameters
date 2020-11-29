@@ -117,8 +117,8 @@ def params_continue_find(params):
         slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
     if slope <= 0 and abs(slope) < 50:
         # 限制上下限
-        wave = waveform(1, 0, 1, 5000, params)
-        wave_diff = np.diff(wave) * 5000
+        wave = waveform(1, 0, 1, 3000, params)
+        wave_diff = np.diff(wave) * 3000
         if np.max(wave) <= 1 and np.min(wave) >= 0 and (wave_diff <= 0).all():
             return False
         else:
@@ -174,7 +174,8 @@ if __name__ == '__main__':
     # 随机
     min_boundary = np.array([-3., -3., -3., -4., -4., -4., -4.])
     max_boundary = np.array([3., 3., 3., 4., 4., 4., 4.])
-    params = get_random_params_set(min_boundary, max_boundary, 100, 4.5, 0, 3, 1000)[0]
+    params = get_random_params_set(min_boundary, max_boundary, 10, 4.5, 0, 3, 1000)[0]
+    print(params)
     plot_wave(4.5, 0, 3, 50000, params)
     # x = np.linspace(0, 1, 1000)
     # y1 = np.power(x, 1/5)
