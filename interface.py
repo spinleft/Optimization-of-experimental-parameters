@@ -26,8 +26,8 @@ class Interface():
         self.predict_good_params_set_size = 1000            # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
         self.predict_random_params_set_size = 10000         # 每次迭代，生成均匀分布参数数量
         self.select_random_params_set_size = 2              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
-        self.window_size = 5                                # 窗口最大大小
-        self.select_good_params_set_size = [3, 2, 1, 1, 1]  # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
+        self.window_size = 4                                # 窗口最大大小
+        self.select_good_params_set_size = [4, 2, 1, 1]  # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
         self.max_num_iteration = 200                        # 最大迭代次数
         self.save_params_set_size = 20                      # 存档中保存的典型参数数量
 
