@@ -177,4 +177,3 @@ if __name__ == '__main__':
     params = get_random_params_set(min_boundary, max_boundary, 1)[0]
     print(params)
     plot_wave(1, 0, 1, 1000, params)
-    

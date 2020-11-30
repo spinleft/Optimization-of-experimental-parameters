@@ -5,10 +5,10 @@ import numpy as np
 import interface
 import utilities
 import neuralnet
+import h5py
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import multiprocessing
-from multiprocessing import TimeoutError
 
 
 class Learner():
@@ -413,11 +413,7 @@ class Learner():
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
-            params_set_size,
-            # self.startpoint,
-            # self.endpoint,
-            # self.tf,
-            # self.sample_rate
+            params_set_size
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -436,11 +432,7 @@ class Learner():
             self.max_boundary,
             base_params,
             self.std_dev,
-            params_set_size,
-            # self.startpoint,
-            # self.endpoint,
-            # self.tf,
-            # self.sample_rate
+            params_set_size
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -457,11 +449,7 @@ class Learner():
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
-            params_set_size,
-            # self.startpoint,
-            # self.endpoint,
-            # self.tf,
-            # self.sample_rate
+            params_set_size
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -509,7 +497,9 @@ class Learner():
                              'best_cost': self.best_cost,
                              'save_params_set': save_params_set,
                              'neural_net_archive_filename': self.net.save()})
-        utilities.save_dict_to_txt_file(self.archive, self.archive_filename)
+        f = h5py.File(self.archive_filename,'w')
+        f['archive'] = self.archive
+        f.close()
 
     def plot_best_costs_list(self):
         x_axis = np.arange(start=0, stop=len(
