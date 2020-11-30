@@ -1,4 +1,5 @@
 import os
+import time
 import datetime
 import numpy as np
 import tensorflow as tf
@@ -43,6 +44,11 @@ def get_result_from_file(filename):
         os.makedirs(dirname)
 
     result = []
+    while True:
+        if os.path.exists(filename):
+            break
+        else:
+            time.sleep(1)
     with open(filename, 'r') as in_file:
         for line in in_file:
             temp = line.strip('\n')
@@ -80,6 +86,11 @@ def waveform(startpoint, endpoint, tf, sample_rate, params):
     wave = startpoint * wave
     return wave
 
+def waveform_linear(starpoint, endpoint, tf, sample_rate):
+    t = np.arange(0, tf, 1 / sample_rate) / tf
+    wave = starpoint + (endpoint - starpoint) * t
+    return wave
+
 def wave_interpolate(wave_old, tf, sample_rate_new):
     t_old = np.linspace(0, tf, len(wave_old))
     f = interpolate.interp1d(t_old, wave_old, kind='quadratic')
@@ -115,7 +126,7 @@ def params_continue_find(params):
     slope = coef[0]
     for i in range(l):
         slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
-    if slope <= 0 and abs(slope) < 50:
+    if slope <= 0 and abs(slope) < 10:
         # 限制上下限
         wave = waveform(1, 0, 1, 3000, params)
         if np.max(wave) <= 1 and np.min(wave) >= 0:
@@ -125,18 +136,20 @@ def params_continue_find(params):
     else:
         return True
 
+# def get_random_params_set(min_boundary, max_boundary, params_set_size, sample_rate):
 def get_random_params_set(min_boundary, max_boundary, params_set_size):
     rng = np.random.default_rng()
     params_set = np.zeros(shape=(params_set_size, len(min_boundary)))
     
     for i in range(params_set_size):
         params = rng.uniform(min_boundary, max_boundary)
-        while params_continue_find(params):
-            params = rng.uniform(min_boundary, max_boundary)
+        # while params_continue_find(params):
+        #     params = rng.uniform(min_boundary, max_boundary)
         params_set[i] = params
     return params_set
 
 
+# def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size, sample_rate):
 def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size):
     rng = np.random.default_rng()
     std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))
@@ -147,12 +160,12 @@ def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, para
         params = np.where(cond, params, min_boundary)
         cond = params <= max_boundary
         params = np.where(cond, params, max_boundary)
-        while params_continue_find(params):
-            params = rng.normal(base_params, std_dev_scale)
-            cond = params >= min_boundary
-            params = np.where(cond, params, min_boundary)
-            cond = params <= max_boundary
-            params = np.where(cond, params, max_boundary)
+        # while params_continue_find(params):
+        #     params = rng.normal(base_params, std_dev_scale)
+        #     cond = params >= min_boundary
+        #     params = np.where(cond, params, min_boundary)
+        #     cond = params <= max_boundary
+        #     params = np.where(cond, params, max_boundary)
         params_set[i] = params
     return params_set
 
@@ -164,3 +177,4 @@ if __name__ == '__main__':
     params = get_random_params_set(min_boundary, max_boundary, 1)[0]
     print(params)
     plot_wave(1, 0, 1, 1000, params)
+    

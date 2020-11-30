@@ -19,9 +19,10 @@ class Learner():
         self.num_params = interface.num_params
         self.min_boundary = np.array(interface.min_boundary)
         self.max_boundary = np.array(interface.max_boundary)
-        self.startpoint = interface.startpoint
-        self.endpoint = interface.endpoint
-        self.tf = interface.tf
+        # self.startpoint = interface.startpoint
+        # self.endpoint = interface.endpoint
+        # self.tf = interface.tf
+        self.sample_rate = interface.sample_rate
         if self.num_params != len(self.min_boundary) or self.num_params != len(self.max_boundary):
             print("num_params != boundary")
             raise ValueError
@@ -30,7 +31,7 @@ class Learner():
         self.layer_dims = [64] * 5
         # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
         self.train_threshold_ratio = 0.015
-        self.batch_size = 8                     # 神经网络训练的批量大小
+        self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
         self.max_epoch = 1000                   # 最大训练epoch
@@ -49,9 +50,9 @@ class Learner():
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 10       # 初始化神经网络时尝试随机权重的次数
         self.reset_net_weight_num = 20      # 重置权重时尝试随机权重的次数
-        self.max_patience = 6               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
-        self.window_retain_size = 1         # 抛弃窗口参数时保留的参数数量
-        self.std_dev = 0.05                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
+        self.max_patience = 8               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
+        self.window_retain_size = 2         # 抛弃窗口参数时保留的参数数量
+        self.std_dev = 0.03                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
 
         # 训练文件
         self.archive_dir = interface.archive_dir                    # 存档目录
@@ -63,9 +64,10 @@ class Learner():
         self.archive = {'num_params': self.num_params,
                         'min_boundary': self.min_boundary,
                         'max_boundary': self.max_boundary,
-                        'startpoint': self.startpoint,
-                        'endpoint': self.endpoint,
-                        'tf': self.tf,
+                        # 'startpoint': self.startpoint,
+                        # 'endpoint': self.endpoint,
+                        # 'tf': self.tf,
+                        'sample_rate': self.sample_rate,
                         'layer_dims': self.layer_dims,
                         'train_threshold_ratio': self.train_threshold_ratio,
                         'batch_size': self.batch_size,
@@ -185,24 +187,30 @@ class Learner():
             raise ValueError
         else:
             self.max_boundary = max_boundary
-        startpoint = np.array(self.archive['startpoint'])   # 波形起始点
-        if self.startpoint is not None and (self.startpoint != startpoint):
-            print("self.startpoint != startpoint")
+        # startpoint = np.array(self.archive['startpoint'])   # 波形起始点
+        # if self.startpoint is not None and (self.startpoint != startpoint):
+        #     print("self.startpoint != startpoint")
+        #     raise ValueError
+        # else:
+        #     self.startpoint = startpoint
+        # endpoint = np.array(self.archive['endpoint'])   # 波形终止点
+        # if self.endpoint is not None and (self.endpoint != endpoint):
+        #     print("self.endpoint != endpoint")
+        #     raise ValueError
+        # else:
+        #     self.endpoint = endpoint
+        # tf = np.array(self.archive['tf'])   # 波形总时间
+        # if self.tf is not None and (self.tf != tf):
+        #     print("self.tf != tf")
+        #     raise ValueError
+        # else:
+        #     self.tf = tf
+        sample_rate = np.array(self.archive['sample_rate'])   # 波形采样率
+        if self.sample_rate is not None and (self.sample_rate != sample_rate):
+            print("self.sample_rate != sample_rate")
             raise ValueError
         else:
-            self.startpoint = startpoint
-        endpoint = np.array(self.archive['endpoint'])   # 波形终止点
-        if self.endpoint is not None and (self.endpoint != endpoint):
-            print("self.endpoint != endpoint")
-            raise ValueError
-        else:
-            self.endpoint = endpoint
-        tf = np.array(self.archive['tf'])   # 波形总时间
-        if self.tf is not None and (self.tf != tf):
-            print("self.tf != tf")
-            raise ValueError
-        else:
-            self.tf = tf
+            self.sample_rate = sample_rate
         # 实验记录
         self.best_params = self.archive['best_params']
         self.best_cost = self.archive['best_cost']
@@ -405,7 +413,11 @@ class Learner():
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
-            params_set_size
+            params_set_size,
+            # self.startpoint,
+            # self.endpoint,
+            # self.tf,
+            # self.sample_rate
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -424,7 +436,11 @@ class Learner():
             self.max_boundary,
             base_params,
             self.std_dev,
-            params_set_size
+            params_set_size,
+            # self.startpoint,
+            # self.endpoint,
+            # self.tf,
+            # self.sample_rate
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -441,7 +457,11 @@ class Learner():
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
-            params_set_size
+            params_set_size,
+            # self.startpoint,
+            # self.endpoint,
+            # self.tf,
+            # self.sample_rate
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -451,11 +471,11 @@ class Learner():
 
     def get_experiment_costs(self, params_set):
         # 并行实现
-        multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
-            np.array([params]),)) for params in params_set]
-        costs_list = [result.get() for result in multiple_results]
-        costs = np.array(costs_list).reshape(-1,)
-        # costs = self.interface.get_experiment_costs(params_set)
+        # multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
+        #     np.array([params]),)) for params in params_set]
+        # costs_list = [result.get() for result in multiple_results]
+        # costs = np.array(costs_list).reshape(-1,)
+        costs = self.interface.get_experiment_costs(params_set)
         return costs
 
     def _save_archive(self):
