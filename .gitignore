@@ -3,6 +3,5 @@ venv/
 __pycache__/
 archives/
 .vscode/
-record.txt
 *test*
 相关文章/
