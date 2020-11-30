@@ -12,30 +12,32 @@ class Interface():
     def __init__(self):
         # 实验参数
         self.target_cost = 0
-        self.num_params = 7
-        self.min_boundary = [-3., -3., -3., -5., -5., -5., -5.]
-        self.max_boundary = [3., 3., 3., 5., 5., 5., 5.]
-        self.startpoint = 12 * constants.Boltzmann * 1.5e-6
-        self.endpoint = self.startpoint / 25
-        self.tf = 10
-        self.experiment_sample_rate = 20                    # 输出到实验的实际采样率
+        self.num_params = 8
+        self.min_boundary = [0.4, 0.0, -0.2, -0.671, 0.6, 0.0, 0.3, -0.2]
+        self.max_boundary = [0.8, 0.2, 0.1, -0.5, 1.2, 0.2, 0.45, 0.0]
+        self.startpoint = 0.38
+        self.endpoint = -0.15
+        self.tf = 0.01
+        self.sample_rate = 100000
+        self.experiment_sample_rate = 100000                    # 输出到实验的实际采样率
 
         # 训练参数
-        self.initial_params_set_size = 10                   # 初始实验数量
-        self.predict_good_params_set_size = 1000            # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
-        self.predict_random_params_set_size = 10000         # 每次迭代，生成均匀分布参数数量
-        self.select_random_params_set_size = 2              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
-        self.window_size = 4                                # 窗口最大大小
-        self.select_good_params_set_size = [4, 2, 1, 1]     # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
-        self.max_num_iteration = 200                        # 最大迭代次数
+        self.initial_params_set_size = 20                   # 初始实验数量
+        self.predict_good_params_set_size = 500            # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
+        self.predict_random_params_set_size = 5000         # 每次迭代，生成均匀分布参数数量
+        self.select_random_params_set_size = 5              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
+        self.window_size = 5                                # 窗口最大大小
+        self.select_good_params_set_size = [5, 4, 3, 2, 1]  # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
+        self.max_num_iteration = 100                        # 最大迭代次数
         self.save_params_set_size = 20                      # 存档中保存的典型参数数量
 
         # 实验文件参数
-        self.wave_dir = "./waves"                   # 波形文件目录
-        self.signal_dir = "./signals"               # 实验信号文件目录
-        self.result_dir = "./results"               # 实验结果目录
-        self.params_index = 0
-        self.init_result_index = 777                # 初始结果序号
+        self.wave_dir = "//192.168.0.134/Share/mlparams/waveform"  # 波形文件目录
+        self.tffilename = "//192.168.0.134/Share/mlparams/waveform/tf.txt"
+        self.signal_dir = "//192.168.0.134/Share/mlparams/index"  # 实验信号文件目录
+        self.result_dir = "./results"  # 实验结果目录
+        self.params_index = 1
+        self.init_result_index = 12  # 初始结果序号
         self.result_index = self.init_result_index
 
         # 训练文件参数
@@ -43,55 +45,130 @@ class Interface():
         self.load_archive_datetime = None
 
     def get_experiment_costs(self, params_set):
-        return self.get_experiment_costs_simulation(params_set)
+        return self.get_experiment_costs_ramp(params_set)
 
-    def get_experiment_costs_vapor(self, params_set):
+    def get_experiment_costs_ramp(self, params_set):
         costs = np.array([], dtype=float)
         for params in params_set:
+            # utilities.plot_wave(self.startpoint, self.endpoint, params[-1], self.sample_rate, params[:-1])
             # 生成波形
-            wave = utilities.waveform(
-                self.startpoint, self.endpoint, params[-1], self.experiment_sample_rate, params[:-1])
+            # wave = utilities.waveform(
+            #     self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
+            wave1 = utilities.waveform_linear(params[0], params[1], self.tf, self.sample_rate)
+            wave2 = utilities.waveform_linear(params[2], params[3], self.tf, self.sample_rate)
+            wave3 = utilities.waveform_linear(params[4], params[5], self.tf, self.sample_rate)
+            wave4 = utilities.waveform_linear(params[0], params[7], self.tf, self.sample_rate)
             # 保存波形到文件
-            wave_filename = os.path.join(
-                self.wave_dir, str(self.params_index)+'.txt')
-            utilities.save_params_to_file(wave_filename, wave)
+            wave1_filename = os.path.join(self.wave_dir, '1.txt')
+            wave2_filename = os.path.join(self.wave_dir, '2.txt')
+            wave3_filename = os.path.join(self.wave_dir, '3.txt')
+            wave4_filename = os.path.join(self.wave_dir, '4.txt')
+
+            utilities.save_params_to_file(wave1_filename, wave1)
+            utilities.save_params_to_file(wave2_filename, wave2)
+            utilities.save_params_to_file(wave3_filename, wave3)
+            utilities.save_params_to_file(wave4_filename, wave4)
+            # utilities.save_params_to_file(self.tffilename, [round(params[-1]*1e6)])
             # 发送信号文件
             signal_filename = os.path.join(
-                self.signal_dir, str(self.params_index)+'.txt')
+                self.signal_dir, str(self.params_index) + '.txt')
             utilities.save_params_to_file(signal_filename, [])
             # 参数文件序号增一
             self.params_index += 1
             # 读取实验结果
             result_filename = os.path.join(
-                self.result_dir, str(self.result_index)+'.txt')
+                self.result_dir, str(self.result_index) + '.txt')
             temp = utilities.get_result_from_file(result_filename)
-            # 结果文件序号增一，准备读取下一个结果
-            self.result_index += 1
             # 计算cost
             bad = False
-            cost = temp
+            cost = temp[0]
+            if temp[1] < 1e6:
+                bad = True
             # bad = ...
+            self.result_index += 1
             while bad == True:
                 # 失锁等原因产生坏数据，重新进行实验
                 # 保存波形到文件
-                wave_filename = os.path.join(
-                    self.wave_dir, str(self.params_index)+'.txt')
-                utilities.save_params_to_file(wave_filename, wave)
+                utilities.save_params_to_file(wave1_filename, wave1)
+                utilities.save_params_to_file(wave2_filename, wave2)
+                utilities.save_params_to_file(wave3_filename, wave3)
+                utilities.save_params_to_file(wave4_filename, wave4)
+                # utilities.save_params_to_file(self.tffilename, [round(params[-1]*1e6)])
                 # 发送信号文件
                 signal_filename = os.path.join(
-                    self.signal_dir, str(self.params_index)+'.txt')
+                    self.signal_dir, str(self.params_index) + '.txt')
                 utilities.save_params_to_file(signal_filename, [])
                 # 参数文件序号增一
                 self.params_index += 1
                 # 读取实验结果
                 result_filename = os.path.join(
-                    self.result_dir, str(self.result_index)+'.txt')
+                    self.result_dir, str(self.result_index) + '.txt')
                 temp = utilities.get_result_from_file(result_filename)
                 # 计算cost
-                cost = temp
-                # bad = ...
+                cost = temp[0]
                 self.result_index += 1
-            
+                # bad = ...
+                if temp[1] > 1e6:
+                    bad = False
+            # 产生有效成本，结果文件序号增一
+            print("atom num = %f, cost = %.5f"%(temp[1], temp[0]))
+            costs = np.hstack((costs, cost))
+        return costs
+
+    def get_experiment_costs_vapor(self, params_set):
+        costs = np.array([], dtype=float)
+        for params in params_set:
+            # utilities.plot_wave(self.startpoint, self.endpoint, params[-1], self.sample_rate, params[:-1])
+            # 生成波形
+            wave = utilities.waveform(
+                self.startpoint, self.endpoint, params[-1], self.sample_rate, params[:-1])
+            # 保存波形到文件
+            wave_filename = os.path.join(self.wave_dir, 'dipole1evp.txt')
+
+            utilities.save_params_to_file(wave_filename, wave)
+            # utilities.save_params_to_file(self.tffilename, [round(params[-1]*1e6)])
+            # 发送信号文件
+            signal_filename = os.path.join(
+                self.signal_dir, str(self.params_index) + '.txt')
+            utilities.save_params_to_file(signal_filename, [])
+            # 参数文件序号增一
+            self.params_index += 1
+            # 读取实验结果
+            result_filename = os.path.join(
+                self.result_dir, str(self.result_index) + '.txt')
+            temp = utilities.get_result_from_file(result_filename)
+            # 计算cost
+            bad = False
+            cost = temp[0]
+            if temp[1] < 1e5:
+                bad = True
+            # bad = ...
+            self.result_index += 1
+            while bad == True:
+                # 失锁等原因产生坏数据，重新进行实验
+                # 保存波形到文件
+
+                wave_filename = os.path.join(self.wave_dir, 'dipole1evp.txt')
+                utilities.save_params_to_file(wave_filename, wave)
+                # utilities.save_params_to_file(self.tffilename, [round(params[-1]*1e6)])
+                # 发送信号文件
+                signal_filename = os.path.join(
+                    self.signal_dir, str(self.params_index) + '.txt')
+                utilities.save_params_to_file(signal_filename, [])
+                # 参数文件序号增一
+                self.params_index += 1
+                # 读取实验结果
+                result_filename = os.path.join(
+                    self.result_dir, str(self.result_index) + '.txt')
+                temp = utilities.get_result_from_file(result_filename)
+                # 计算cost
+                cost = temp[0]
+                self.result_index += 1
+                # bad = ...
+                if temp[1] > 1e5:
+                    bad = False
+            # 产生有效成本，结果文件序号增一
+
             costs = np.hstack((costs, cost))
         return costs
 
@@ -100,14 +177,14 @@ class Interface():
         for params in params_set:
             k = 5.0
             g = 9.8
-            x_step = 1.0 / self.experiment_sample_rate
+            x_step = 1.0 / self.sample_rate
             xmax = 15.71
             x = np.arange(0, xmax, x_step)
             len_x = len(x)
             t = 0
             bad = False
             wave = utilities.waveform(
-                self.startpoint, self.endpoint, self.tf, self.experiment_sample_rate, params)
+                self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
             for i in range(1, len_x):
                 if wave[i] > 10.0 or wave[i] == float('nan'):
                     bad = True
