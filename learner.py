@@ -413,11 +413,7 @@ class Learner():
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
-            params_set_size,
-            # self.startpoint,
-            # self.endpoint,
-            # self.tf,
-            # self.sample_rate
+            params_set_size
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -436,11 +432,7 @@ class Learner():
             self.max_boundary,
             base_params,
             self.std_dev,
-            params_set_size,
-            # self.startpoint,
-            # self.endpoint,
-            # self.tf,
-            # self.sample_rate
+            params_set_size
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -457,11 +449,7 @@ class Learner():
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
-            params_set_size,
-            # self.startpoint,
-            # self.endpoint,
-            # self.tf,
-            # self.sample_rate
+            params_set_size
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
