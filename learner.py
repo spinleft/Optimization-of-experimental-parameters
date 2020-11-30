@@ -22,7 +22,6 @@ class Learner():
         self.startpoint = interface.startpoint
         self.endpoint = interface.endpoint
         self.tf = interface.tf
-        self.sample_rate = interface.sample_rate
         if self.num_params != len(self.min_boundary) or self.num_params != len(self.max_boundary):
             print("num_params != boundary")
             raise ValueError
@@ -31,7 +30,7 @@ class Learner():
         self.layer_dims = [64] * 5
         # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
         self.train_threshold_ratio = 0.015
-        self.batch_size = 16                    # 神经网络训练的批量大小
+        self.batch_size = 8                     # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
         self.max_epoch = 1000                   # 最大训练epoch
@@ -67,7 +66,6 @@ class Learner():
                         'startpoint': self.startpoint,
                         'endpoint': self.endpoint,
                         'tf': self.tf,
-                        'sample_rate': self.sample_rate,
                         'layer_dims': self.layer_dims,
                         'train_threshold_ratio': self.train_threshold_ratio,
                         'batch_size': self.batch_size,
@@ -205,12 +203,6 @@ class Learner():
             raise ValueError
         else:
             self.tf = tf
-        sample_rate = np.array(self.archive['sample_rate'])   # 波形采样率
-        if self.sample_rate is not None and (self.sample_rate != sample_rate):
-            print("self.sample_rate != sample_rate")
-            raise ValueError
-        else:
-            self.sample_rate = sample_rate
         # 实验记录
         self.best_params = self.archive['best_params']
         self.best_cost = self.archive['best_cost']
@@ -413,11 +405,7 @@ class Learner():
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
-            params_set_size,
-            self.startpoint,
-            self.endpoint,
-            self.tf,
-            self.sample_rate
+            params_set_size
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -436,11 +424,7 @@ class Learner():
             self.max_boundary,
             base_params,
             self.std_dev,
-            params_set_size,
-            self.startpoint,
-            self.endpoint,
-            self.tf,
-            self.sample_rate
+            params_set_size
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -457,11 +441,7 @@ class Learner():
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
-            params_set_size,
-            self.startpoint,
-            self.endpoint,
-            self.tf,
-            self.sample_rate
+            params_set_size
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -504,7 +484,7 @@ class Learner():
         self.archive.update({'history_params_list': temp_params_set,
                              'history_costs_list': temp_costs_set,
                              'best_params_list': self.best_params_list,
-                             'best_costs_list': self.best_cost,
+                             'best_costs_list': self.best_costs_list,
                              'best_params': self.best_params,
                              'best_cost': self.best_cost,
                              'save_params_set': save_params_set,

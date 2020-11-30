@@ -2,6 +2,8 @@ import numpy as np
 from scipy import optimize
 from scipy import integrate
 from scipy import constants
+from scipy import interpolate
+import matplotlib.pyplot as plt
 import utilities
 
 def calculate_temperature(K_wave, sample_rate):
@@ -171,12 +173,20 @@ def main():
     T = 1.5e-6
     K_0 = 12 * kB * T
 
-    sample_rate = 20
     tf = 10
-    t_step = 1 / sample_rate
-    t = np.arange(0., tf, t_step)
-    K_wave = K_0 * np.exp(-t * (np.log(25) / tf))
-    print("tf = %f:"%tf)
+    sample_rate = 5000
+    t = np.arange(0, tf, 1 / sample_rate)
+
+    params = np.array([-0.38430342, 2.47892757, -1.67234304, -5., 2.375123, 1.01905152, -0.84496258])
+    wave = utilities.waveform(K_0, K_0 / 25, 10, 5000, params)
+    t_sample = t[[0, 2000, 4000, 5000, 6000, 7000, 8000]]
+    wave_sample = wave[[0, 2000, 4000, 5000, 6000, 7000, 8000]]
+    f = interpolate.interp1d(t_sample, wave_sample, kind='quadratic')
+
+    sample_rate = 100
+    t = np.arange(0, tf, 1 / sample_rate)
+    K_wave = utilities.waveform(K_0, K_0 / 25, 10, sample_rate, params)
+    K_wave[:40] = f(t[:40])
     result = calculate_temperature(K_wave, sample_rate)
     print(result)
 

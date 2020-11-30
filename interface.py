@@ -18,7 +18,6 @@ class Interface():
         self.startpoint = 12 * constants.Boltzmann * 1.5e-6
         self.endpoint = self.startpoint / 25
         self.tf = 10
-        self.sample_rate = 1000
         self.experiment_sample_rate = 20                    # 输出到实验的实际采样率
 
         # 训练参数
@@ -27,7 +26,7 @@ class Interface():
         self.predict_random_params_set_size = 10000         # 每次迭代，生成均匀分布参数数量
         self.select_random_params_set_size = 2              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
         self.window_size = 4                                # 窗口最大大小
-        self.select_good_params_set_size = [4, 2, 1, 1]  # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
+        self.select_good_params_set_size = [4, 2, 1, 1]     # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
         self.max_num_iteration = 200                        # 最大迭代次数
         self.save_params_set_size = 20                      # 存档中保存的典型参数数量
 
@@ -51,7 +50,7 @@ class Interface():
         for params in params_set:
             # 生成波形
             wave = utilities.waveform(
-                self.startpoint, self.endpoint, params[-1], self.sample_rate, params[:-1])
+                self.startpoint, self.endpoint, params[-1], self.experiment_sample_rate, params[:-1])
             # 保存波形到文件
             wave_filename = os.path.join(
                 self.wave_dir, str(self.params_index)+'.txt')
@@ -101,14 +100,14 @@ class Interface():
         for params in params_set:
             k = 5.0
             g = 9.8
-            x_step = 1.0 / self.sample_rate
+            x_step = 1.0 / self.experiment_sample_rate
             xmax = 15.71
             x = np.arange(0, xmax, x_step)
             len_x = len(x)
             t = 0
             bad = False
             wave = utilities.waveform(
-                self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
+                self.startpoint, self.endpoint, self.tf, self.experiment_sample_rate, params)
             for i in range(1, len_x):
                 if wave[i] > 10.0 or wave[i] == float('nan'):
                     bad = True
