@@ -171,32 +171,10 @@ def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, para
 
 
 if __name__ == '__main__':
-    # 最速降线
-    # params = np.array([-1.15722878, -0.51218646, 1.07800144, -2.35206841, 0.85351334, -0.1725775, -0.012383])   # 0.064683930185784
-    # params = np.array([1.32179176, -1.21398091, 0.74667593, -2.54193118, 2.35885283, -1.54051139, 0.43814302])  # 0.038674916857825536
-    # params = np.array([-0.70461515, 1.39923573, -0.65270201, -2.51971808, 2.09282611, -1.92157829, 0.68268599])
-    # params = np.array([-0.7670372, 1.53994717, -0.71413151, -2.81321045, 2.22119171, -1.8959186, 0.67939656])
-    # params = np.array([-1.25691566, 1.64684315, -0.79104391, -3., 1.73756398, -1.89891462, 0.78546396])
-    # 数值模拟
-    # params = np.array([1.45977357, 0.67831924, -0.58728008, 0.51803271, 2.7090874, -0.60886192, -1.87649613])
-    # params = np.array([1.53569274, 1.97344643, -1.31129392, 3., 0.85330547, -3., 0.81725298])   # 0.05954534
-    # params = np.array([1.27987736, 2.28957164, -1.38378197, 3.,          1.06099137, -2.97176395, 0.76509959])
-    # params = np.array([-2.71898154, -0.22467944, 1.00072299, 1.18886061, -2.84190435, 0.36511431, -0.03863528])
-    # wave = waveform(1, 0, 1, 50000, params)
-    # 蒸发波形
-    params = np.array([1.43037903e+00,  2.92770553e+00, -3.00000000e+00,         2.99857675e+00, -2.84872432e+00, -5.04568548e-02,         1.59857124e-01])
-    wave = waveform(0.38, -0.15, 0.01, 100000, params)
-    save_params_to_file('//192.168.0.134/Share/mlparams/waveform/dipole1evp.txt', wave)
-    # 随机
-    # min_boundary = np.array([-3., -3., -3., -4., -4., -4., -4.])
-    # max_boundary = np.array([3., 3., 3., 4., 4., 4., 4.])
-    # params = get_random_params_set(min_boundary, max_boundary, 1, 4.5, 0, 3, 20)[0]
-    # print(params)
-    plot_wave(4.5, 0, 3, 50000, params)
-    # x = np.linspace(0, 1, 1000)
-    # y1 = np.power(x, 1/5)
-    # y2 = np.log2((1 + 511 * x)**(1/9))
-    # plt.plot(x, y1, label='y1')
-    # plt.plot(x, y2, label='y2')
-    # plt.legend()
-    # plt.show()
+    # 查看随机波形随机
+    min_boundary = np.array([-3., -3., -3., -4., -4., -4., -4.])
+    max_boundary = np.array([3., 3., 3., 4., 4., 4., 4.])
+    params = get_random_params_set(min_boundary, max_boundary, 1)[0]
+    print(params)
+    plot_wave(1, 0, 1, 1000, params)
+    
