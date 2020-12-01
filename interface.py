@@ -22,10 +22,10 @@ class Interface():
 
         # 训练参数
         self.target_cost = 0
-        self.initial_params_set_size = 20                   # 初始实验数量
+        self.initial_params_set_size = 15                   # 初始实验数量
         self.predict_good_params_set_size = 500             # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
         self.predict_random_params_set_size = 5000          # 每次迭代，生成均匀分布参数数量
-        self.select_random_params_set_size = 5              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
+        self.select_random_params_set_size = 2              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
         self.window_size = 4                                # 窗口最大大小
         self.select_good_params_set_size = [3, 4, 2, 1]     # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
         self.max_num_iteration = 100                        # 最大迭代次数
