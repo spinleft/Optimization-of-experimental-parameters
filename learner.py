@@ -26,7 +26,7 @@ class Learner():
         # 神经网络超参数
         self.layer_dims = [64] * 5
         # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
-        self.train_threshold_ratio = 0.01
+        self.train_threshold_ratio = 0.015
         self.batch_size = 8                     # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
@@ -56,7 +56,7 @@ class Learner():
         self.archive_file_prefix = 'archive_'                       # 存档前缀
         self.start_datetime = utilities.get_datetime_now_string()   # 存档日期
         self.archive_filename = os.path.join(self.archive_dir,
-                                             self.archive_file_prefix+self.start_datetime+'.txt')
+                                             self.archive_file_prefix+self.start_datetime+'.h5')
         # 存档
         self.archive = {'num_params': self.num_params,
                         'min_boundary': self.min_boundary,
@@ -160,7 +160,7 @@ class Learner():
     def load(self, start_datetime):
         # 加载存档
         load_archive_filename = os.path.join(
-            self.archive_dir, self.archive_file_prefix+start_datetime+'.txt')
+            self.archive_dir, self.archive_file_prefix+start_datetime+'.h5')
         # 从存档中读取参数
         print("Loading...")
         self._load_archive(load_archive_filename)

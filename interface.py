@@ -12,19 +12,19 @@ import simulation
 class Interface():
     def __init__(self):
         # 实验参数
-        self.num_params = 7
-        self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
-        self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
-        self.startpoint = 12 * constants.Boltzmann * 1.5e-6
-        self.endpoint = self.startpoint / 25
-        self.tf = 10
-        self.sample_rate = 20                               # 实验采样率
+        self.num_params = 8
+        self.min_boundary = [0.6, 0.1, 0.2, -0.3, 0.1, -0.3, 0.1, -0.3]
+        self.max_boundary = [1.5, 0.4, 0.45, 0.0, 0.4, 0.0, 0.4, 0.0]
+        self.startpoint = 0.38
+        self.endpoint = -0.15
+        self.tf = 0.01
+        self.sample_rate = 100000                           # 实验采样率
 
         # 训练参数
         self.target_cost = 0
         self.initial_params_set_size = 15                   # 初始实验数量
-        self.predict_good_params_set_size = 500             # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
-        self.predict_random_params_set_size = 5000          # 每次迭代，生成均匀分布参数数量
+        self.predict_good_params_set_size = 10000           # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
+        self.predict_random_params_set_size = 100000        # 每次迭代，生成均匀分布参数数量
         self.select_random_params_set_size = 2              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
         self.window_size = 4                                # 窗口最大大小
         self.select_good_params_set_size = [3, 4, 2, 1]     # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
@@ -37,7 +37,7 @@ class Interface():
         self.signal_dir = "//192.168.0.134/Share/mlparams/index"                # 实验信号文件目录
         self.result_dir = "./results"                                           # 实验结果目录
         self.signal_index = 1                                                   # 信号文件初始序号
-        self.init_result_index = 183                                            # 初始结果序号
+        self.init_result_index = 64                                            # 初始结果序号
         self.result_index = self.init_result_index
 
         # 训练文件参数
@@ -283,7 +283,7 @@ def main(argv):
             datetime = value
             return
         elif option in ("-p", "--print"):
-            archive_filename = './archives/archive_' + value + '.txt'
+            archive_filename = './archives/archive_' + value + '.h5'
             print_archive(archive_filename)
             return
     interface = Interface()
