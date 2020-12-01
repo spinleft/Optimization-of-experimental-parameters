@@ -12,13 +12,13 @@ import simulation
 class Interface():
     def __init__(self):
         # 实验参数
-        self.num_params = 8
-        self.min_boundary = [0.6, 0.1, 0.2, -0.3, 0.1, -0.3, 0.1, -0.3]
-        self.max_boundary = [1.5, 0.4, 0.45, 0.0, 0.4, 0.0, 0.4, 0.0]
-        self.startpoint = 0.38
-        self.endpoint = -0.15
-        self.tf = 0.01
-        self.sample_rate = 100000                           # 实验采样率
+        self.num_params = 7
+        self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
+        self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
+        self.startpoint = 12 * constants.Boltzmann * 1.5e-6
+        self.endpoint = self.startpoint / 25
+        self.tf = 10
+        self.sample_rate = 20                               # 实验采样率
 
         # 训练参数
         self.target_cost = 0
@@ -45,7 +45,7 @@ class Interface():
         self.load_archive_datetime = None
 
     def get_experiment_costs(self, params_set):
-        return self.get_experiment_costs_test(params_set)
+        return self.get_experiment_costs_simulation(params_set)
 
     def get_experiment_costs_ramp(self, params_set):
         costs = np.array([], dtype=float)
@@ -218,8 +218,8 @@ class Interface():
             wave = utilities.waveform(
                 self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
             cost = simulation.calculate_temperature(wave, self.sample_rate)
-            cost += cost * np.random.normal(0, 0.05)
-            cost = np.log(cost / 0.08)
+            cost += cost * np.random.normal(0, 0.1)
+            cost = np.log(cost / 0.084)
             costs = np.hstack((costs, cost))
         return costs
 
