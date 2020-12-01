@@ -28,7 +28,7 @@ class Interface():
         self.select_random_params_set_size = 5              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
         self.window_size = 5                                # 窗口最大大小
         self.select_good_params_set_size = [5, 5, 2, 2, 1]  # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
-        self.max_num_iteration = 100                        # 最大迭代次数
+        self.max_num_iteration = 20                         # 最大迭代次数
         self.save_params_set_size = 20                      # 存档中保存的典型参数数量
 
         # 实验文件参数
@@ -192,8 +192,8 @@ class Interface():
                     else:
                         t += (np.sqrt(v_i ** 2 + 2 * a * s) - v_i) / a
             min_time = np.pi * np.sqrt(k / g)
-            t += t * np.random.normal(0, 0.1)
             cost = t - min_time
+            cost += cost * np.random.normal(0, 0.1)
             if not bad:
                 costs = np.hstack((costs, cost))
             else:

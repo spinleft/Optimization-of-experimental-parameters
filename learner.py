@@ -236,10 +236,13 @@ class Learner():
                 predict_random_params_set[indexes[:self.select_random_params_set_size]])
 
             # Step4: 获取实验结果
-            select_good_costs_set = self.get_experiment_costs(
-                select_good_params_set)
-            select_random_costs_set = self.get_experiment_costs(
-                select_random_params_set)
+            temp_params_set = np.vstack((select_good_params_set, select_random_params_set, self.window_params_set))
+            temp_costs_set = self.get_experiment_costs(temp_params_set)
+            select_good_costs_set = temp_costs_set[:sum(self.select_good_params_set_size)]
+            select_random_costs_set = temp_costs_set[sum(self.select_good_params_set_size):-self.window_size]
+            # 更新窗口参数的cost
+            new_window_costs_set = temp_costs_set[-self.window_size:]
+            self.window_costs_set = (1 - 1 / self.max_patience) * self.window_costs_set + 1 / self.max_patience * new_window_costs_set
 
             # 将select_good_params_set替换入window_params_set或放入train_params_set
             label = 0
@@ -481,7 +484,7 @@ class Learner():
         plt.xlabel("Iteration")
         plt.ylabel("Cost")
         plt.plot(x_axis, self.best_costs_list)
-        plt.show(block=False)
+        plt.show()
 
     def print_archive(self):
         f = h5py.File(self.archive_filename, 'r')
