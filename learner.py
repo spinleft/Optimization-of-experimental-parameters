@@ -498,7 +498,8 @@ class Learner():
                              'save_params_set': save_params_set,
                              'neural_net_archive_filename': self.net.save()})
         f = h5py.File(self.archive_filename,'w')
-        f['archive'] = self.archive
+        for key in self.archive:
+            f[key] = self.archive[key]
         f.close()
 
     def plot_best_costs_list(self):
