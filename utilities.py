@@ -171,6 +171,6 @@ if __name__ == '__main__':
     min_boundary = np.array([-3., -3., -3., -4., -4., -4., -4.])
     max_boundary = np.array([3., 3., 3., 4., 4., 4., 4.])
     params = get_random_params_set(min_boundary, max_boundary, 1)[0]
-    params = np.array([-0.08543086, 1.51720138, -0.68983817, 1.05910924, -0.2143989, -0.87008418, 0.22101959])
+    params = np.array([0.43126854, 2.97460144, -1.55703471, 2.74905675, 0.28529145, -1.58702029, 0.27676439])
     print(params)
     plot_wave(1, 0, 1, 1000, params)
