@@ -44,7 +44,7 @@ class Interface():
         self.load_archive_datetime = None
 
     def get_experiment_costs(self, params_set):
-        return self.get_experiment_costs_ramp(params_set)
+        return self.get_experiment_costs_test(params_set)
 
     def get_experiment_costs_ramp(self, params_set):
         costs = np.array([], dtype=float)

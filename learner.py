@@ -19,10 +19,6 @@ class Learner():
         self.num_params = interface.num_params
         self.min_boundary = np.array(interface.min_boundary)
         self.max_boundary = np.array(interface.max_boundary)
-        # self.startpoint = interface.startpoint
-        # self.endpoint = interface.endpoint
-        # self.tf = interface.tf
-        self.sample_rate = interface.sample_rate
         if self.num_params != len(self.min_boundary) or self.num_params != len(self.max_boundary):
             print("num_params != boundary")
             raise ValueError
@@ -30,7 +26,7 @@ class Learner():
         # 神经网络超参数
         self.layer_dims = [64] * 5
         # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
-        self.train_threshold_ratio = 0.015
+        self.train_threshold_ratio = 0.01
         self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
@@ -64,10 +60,6 @@ class Learner():
         self.archive = {'num_params': self.num_params,
                         'min_boundary': self.min_boundary,
                         'max_boundary': self.max_boundary,
-                        # 'startpoint': self.startpoint,
-                        # 'endpoint': self.endpoint,
-                        # 'tf': self.tf,
-                        'sample_rate': self.sample_rate,
                         'layer_dims': self.layer_dims,
                         'train_threshold_ratio': self.train_threshold_ratio,
                         'batch_size': self.batch_size,
@@ -166,62 +158,12 @@ class Learner():
         load_archive_filename = os.path.join(
             self.archive_dir, self.archive_file_prefix+start_datetime+'.txt')
         # 从存档中读取参数
-        self.archive = utilities.get_dict_from_file(load_archive_filename)
         print("Loading...")
-        # 实验参数
-        num_params = int(self.archive['num_params'])    # 参数数量
-        if self.num_params is not None and self.num_params != num_params:
-            print("self.num_params != num_params")
-            raise ValueError
-        else:
-            self.num_params = num_params
-        min_boundary = np.array(self.archive['min_boundary'])   # 参数下界
-        if self.min_boundary is not None and (self.min_boundary != min_boundary).any():
-            print("self.min_boundary != min_boundary")
-            raise ValueError
-        else:
-            self.min_boundary = min_boundary
-        max_boundary = np.array(self.archive['max_boundary'])   # 参数上界
-        if self.max_boundary is not None and (self.max_boundary != max_boundary).any():
-            print("self.max_boundary != max_boundary")
-            raise ValueError
-        else:
-            self.max_boundary = max_boundary
-        # startpoint = np.array(self.archive['startpoint'])   # 波形起始点
-        # if self.startpoint is not None and (self.startpoint != startpoint):
-        #     print("self.startpoint != startpoint")
-        #     raise ValueError
-        # else:
-        #     self.startpoint = startpoint
-        # endpoint = np.array(self.archive['endpoint'])   # 波形终止点
-        # if self.endpoint is not None and (self.endpoint != endpoint):
-        #     print("self.endpoint != endpoint")
-        #     raise ValueError
-        # else:
-        #     self.endpoint = endpoint
-        # tf = np.array(self.archive['tf'])   # 波形总时间
-        # if self.tf is not None and (self.tf != tf):
-        #     print("self.tf != tf")
-        #     raise ValueError
-        # else:
-        #     self.tf = tf
-        sample_rate = np.array(self.archive['sample_rate'])   # 波形采样率
-        if self.sample_rate is not None and (self.sample_rate != sample_rate):
-            print("self.sample_rate != sample_rate")
-            raise ValueError
-        else:
-            self.sample_rate = sample_rate
-        # 实验记录
-        self.best_params = self.archive['best_params']
-        self.best_cost = self.archive['best_cost']
-        self.best_params_list = self.archive['best_params_list']
-        self.best_costs_list = self.archive['best_costs_list']
-        self.last_iteration = self.archive['last_iteration']
+        self._load_archive(load_archive_filename)
 
         # 读取上次保存的典型参数，获取实验结果
         self.last_iteration += 1
         print("Iteration %d..." % self.last_iteration)
-        self.init_params_set = np.array(self.archive['save_params_set'])
         self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
 
@@ -243,12 +185,11 @@ class Learner():
         # 更新档案
         self.archive.update({'last_iteration': self.last_iteration})
         # 加载神经网络
-        load_neural_net_archive_filename = self.archive['neural_net_archive_filename']
         self.net = neuralnet.NeuralNet(self.min_boundary,
                                        self.max_boundary,
                                        archive_dir=self.archive_dir,
                                        start_datetime=self.start_datetime)
-        self.net.load(self.archive, load_neural_net_archive_filename)
+        self.net.load(self.archive, self.load_neural_net_archive_filename)
         # 存档
         self._save_archive()
 
@@ -459,11 +400,11 @@ class Learner():
 
     def get_experiment_costs(self, params_set):
         # 并行实现
-        # multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
-        #     np.array([params]),)) for params in params_set]
-        # costs_list = [result.get() for result in multiple_results]
-        # costs = np.array(costs_list).reshape(-1,)
-        costs = self.interface.get_experiment_costs(params_set)
+        multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
+            np.array([params]),)) for params in params_set]
+        costs_list = [result.get() for result in multiple_results]
+        costs = np.array(costs_list).reshape(-1,)
+        # costs = self.interface.get_experiment_costs(params_set)
         return costs
 
     def _save_archive(self):
@@ -497,7 +438,42 @@ class Learner():
                              'best_cost': self.best_cost,
                              'save_params_set': save_params_set,
                              'neural_net_archive_filename': self.net.save()})
-        utilities.save_dict_to_txt_file(self.archive, self.archive_filename)
+        f = h5py.File(self.archive_filename,'w')
+        for key in self.archive:
+            f.create_dataset(key, data=self.archive[key])
+        f.close()
+
+    def _load_archive(self, load_archive_filename):
+        f = h5py.File(load_archive_filename, 'r')
+        f.keys()
+        # 实验参数
+        num_params = f['num_params'][()]    # 参数数量
+        if self.num_params is not None and self.num_params != num_params:
+            print("self.num_params != num_params")
+            raise ValueError
+        else:
+            self.num_params = num_params
+        min_boundary = f['min_boundary'][()]   # 参数下界
+        if self.min_boundary is not None and (self.min_boundary != min_boundary).any():
+            print("self.min_boundary != min_boundary")
+            raise ValueError
+        else:
+            self.min_boundary = min_boundary
+        max_boundary = f['max_boundary'][()]   # 参数上界
+        if self.max_boundary is not None and (self.max_boundary != max_boundary).any():
+            print("self.max_boundary != max_boundary")
+            raise ValueError
+        else:
+            self.max_boundary = max_boundary
+        
+        # 实验记录
+        self.best_params = f['best_params'][()]
+        self.best_cost = f['best_cost'][()]
+        self.best_params_list = f['best_params_list'][()]
+        self.best_costs_list = f['best_costs_list'][()]
+        self.last_iteration = f['last_iteration'][()]
+        self.init_params_set = f['save_params_set'][()]
+        self.load_neural_net_archive_filename = f['neural_net_archive_filename'][()]
 
     def plot_best_costs_list(self):
         x_axis = np.arange(start=0, stop=len(
