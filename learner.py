@@ -47,9 +47,9 @@ class Learner():
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 10       # 初始化神经网络时尝试随机权重的次数
         self.reset_net_weight_num = 20      # 重置权重时尝试随机权重的次数
-        self.max_patience = 6               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
+        self.max_patience = 4               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
         self.window_retain_size = 1         # 抛弃窗口参数时保留的参数数量
-        self.std_dev = 0.05                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
+        self.std_dev = 0.1                  # 生成正态分布参数的标准差（将上下界差缩放为1后）
 
         # 训练文件
         self.archive_dir = interface.archive_dir                    # 存档目录
@@ -411,11 +411,11 @@ class Learner():
 
     def get_experiment_costs(self, params_set):
         # 并行实现
-        multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
-            np.array([params]),)) for params in params_set]
-        costs_list = [result.get() for result in multiple_results]
-        costs = np.array(costs_list).reshape(-1,)
-        # costs = self.interface.get_experiment_costs(params_set)
+        # multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
+        #     np.array([params]),)) for params in params_set]
+        # costs_list = [result.get() for result in multiple_results]
+        # costs = np.array(costs_list).reshape(-1,)
+        costs = self.interface.get_experiment_costs(params_set)
         return costs
 
     def _save_archive(self):
