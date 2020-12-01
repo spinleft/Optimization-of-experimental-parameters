@@ -2,9 +2,7 @@ import os
 import time
 import datetime
 import numpy as np
-import tensorflow as tf
 import matplotlib.pyplot as plt
-from scipy import constants
 from scipy import interpolate
 
 

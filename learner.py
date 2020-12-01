@@ -50,9 +50,9 @@ class Learner():
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 10       # 初始化神经网络时尝试随机权重的次数
         self.reset_net_weight_num = 20      # 重置权重时尝试随机权重的次数
-        self.max_patience = 8               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
-        self.window_retain_size = 2         # 抛弃窗口参数时保留的参数数量
-        self.std_dev = 0.03                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
+        self.max_patience = 3               # 忍受结果未变好（最近一次不是最近max_patience次的最优）的最大次数
+        self.window_retain_size = 1         # 抛弃窗口参数时保留的参数数量
+        self.std_dev = 0.1                  # 生成正态分布参数的标准差（将上下界差缩放为1后）
 
         # 训练文件
         self.archive_dir = interface.archive_dir                    # 存档目录
@@ -497,9 +497,7 @@ class Learner():
                              'best_cost': self.best_cost,
                              'save_params_set': save_params_set,
                              'neural_net_archive_filename': self.net.save()})
-        f = h5py.File(self.archive_filename,'w')
-        f['archive'] = self.archive
-        f.close()
+        utilities.save_dict_to_txt_file(self.archive, self.archive_filename)
 
     def plot_best_costs_list(self):
         x_axis = np.arange(start=0, stop=len(

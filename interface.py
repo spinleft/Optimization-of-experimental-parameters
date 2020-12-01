@@ -13,8 +13,8 @@ class Interface():
         # 实验参数
         self.target_cost = 0
         self.num_params = 8
-        self.min_boundary = [0.4, 0.0, -0.2, -0.671, 0.6, 0.0, 0.3, -0.2]
-        self.max_boundary = [0.8, 0.2, 0.1, -0.5, 1.2, 0.2, 0.45, 0.0]
+        self.min_boundary = [0.6, 0.1, 0.2, -0.3, 0.1, -0.3, 0.1, -0.3]
+        self.max_boundary = [1.5, 0.4, 0.45, 0.0, 0.4, 0.0, 0.4, 0.0]
         self.startpoint = 0.38
         self.endpoint = -0.15
         self.tf = 0.01
@@ -25,8 +25,8 @@ class Interface():
         self.predict_good_params_set_size = 500             # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
         self.predict_random_params_set_size = 5000          # 每次迭代，生成均匀分布参数数量
         self.select_random_params_set_size = 5              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
-        self.window_size = 5                                # 窗口最大大小
-        self.select_good_params_set_size = [5, 4, 3, 2, 1]  # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
+        self.window_size = 4                                # 窗口最大大小
+        self.select_good_params_set_size = [3, 4, 2, 1]     # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
         self.max_num_iteration = 100                        # 最大迭代次数
         self.save_params_set_size = 20                      # 存档中保存的典型参数数量
 
@@ -36,7 +36,7 @@ class Interface():
         self.signal_dir = "//192.168.0.134/Share/mlparams/index"                # 实验信号文件目录
         self.result_dir = "./results"                                           # 实验结果目录
         self.signal_index = 1                                                   # 信号文件初始序号
-        self.init_result_index = 12                                             # 初始结果序号
+        self.init_result_index = 183                                            # 初始结果序号
         self.result_index = self.init_result_index
 
         # 训练文件参数
@@ -52,18 +52,26 @@ class Interface():
             # 生成波形
             wave1 = utilities.waveform_linear(params[0], params[1], self.tf, self.sample_rate)
             wave2 = utilities.waveform_linear(params[2], params[3], self.tf, self.sample_rate)
-            wave3 = utilities.waveform_linear(params[4], params[5], self.tf, self.sample_rate)
-            wave4 = utilities.waveform_linear(params[0], params[7], self.tf, self.sample_rate)
+            # wave3 = utilities.waveform_linear(params[4], params[5], self.tf, self.sample_rate)
+            # wave4 = utilities.waveform_linear(params[0], params[7], self.tf, self.sample_rate)
             # 保存波形到文件
             wave1_filename = os.path.join(self.wave_dir, '1.txt')
             wave2_filename = os.path.join(self.wave_dir, '2.txt')
-            wave3_filename = os.path.join(self.wave_dir, '3.txt')
-            wave4_filename = os.path.join(self.wave_dir, '4.txt')
+            # wave3_filename = os.path.join(self.wave_dir, '3.txt')
+            # wave4_filename = os.path.join(self.wave_dir, '4.txt')
+            const3_filename = os.path.join(self.wave_dir, '3.txt')
+            const4_filename = os.path.join(self.wave_dir, '4.txt')
+            const5_filename = os.path.join(self.wave_dir, '5.txt')
+            const6_filename = os.path.join(self.wave_dir, '6.txt')
 
             utilities.save_params_to_file(wave1_filename, wave1)
             utilities.save_params_to_file(wave2_filename, wave2)
-            utilities.save_params_to_file(wave3_filename, wave3)
-            utilities.save_params_to_file(wave4_filename, wave4)
+            # utilities.save_params_to_file(wave3_filename, wave3)
+            # utilities.save_params_to_file(wave4_filename, wave4)
+            utilities.save_params_to_file(const3_filename, [params[4]])
+            utilities.save_params_to_file(const4_filename, [params[5]])
+            utilities.save_params_to_file(const5_filename, [params[6]])
+            utilities.save_params_to_file(const6_filename, [params[7]])
             # 发送信号文件
             signal_filename = os.path.join(
                 self.signal_dir, str(self.signal_index) + '.txt')
@@ -86,8 +94,12 @@ class Interface():
                 # 保存波形到文件
                 utilities.save_params_to_file(wave1_filename, wave1)
                 utilities.save_params_to_file(wave2_filename, wave2)
-                utilities.save_params_to_file(wave3_filename, wave3)
-                utilities.save_params_to_file(wave4_filename, wave4)
+                # utilities.save_params_to_file(wave3_filename, wave3)
+                # utilities.save_params_to_file(wave4_filename, wave4)
+                utilities.save_params_to_file(const3_filename, [params[4]])
+                utilities.save_params_to_file(const4_filename, [params[5]])
+                utilities.save_params_to_file(const5_filename, [params[6]])
+                utilities.save_params_to_file(const6_filename, [params[7]])
                 # 发送信号文件
                 signal_filename = os.path.join(
                     self.signal_dir, str(self.signal_index) + '.txt')
