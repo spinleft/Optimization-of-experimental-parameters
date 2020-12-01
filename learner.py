@@ -33,6 +33,7 @@ class Learner():
         self.max_epoch = 1000                   # 最大训练epoch
 
         # 训练参数
+        self.target_cost = interface.target_cost
         self.initial_params_set_size = interface.initial_params_set_size
         self.predict_good_params_set_size = interface.predict_good_params_set_size
         self.predict_random_params_set_size = interface.predict_random_params_set_size
@@ -443,9 +444,8 @@ class Learner():
             f.create_dataset(key, data=self.archive[key])
         f.close()
 
-    def _load_archive(self, load_archive_filename):
-        f = h5py.File(load_archive_filename, 'r')
-        f.keys()
+    def _load_archive(self, archive_filename):
+        f = h5py.File(archive_filename, 'r')
         # 实验参数
         num_params = f['num_params'][()]    # 参数数量
         if self.num_params is not None and self.num_params != num_params:
@@ -482,3 +482,45 @@ class Learner():
         plt.ylabel("Cost")
         plt.plot(x_axis, self.best_costs_list)
         plt.show(block=False)
+
+    def print_archive(self):
+        f = h5py.File(self.archive_filename, 'r')
+        print("****** 实验参数 ******")
+        num_params = f['num_params'][()]
+        print("---- num_params = %d ----"%num_params)
+        min_boundary = f['min_boundary'][()]
+        print("---- min_boundary = " + repr(min_boundary) + " ----")
+        max_boundary = f['max_boundary'][()]
+        print("---- max_boundary = " + repr(max_boundary) + " ----")
+        
+        print("****** 实验记录 ******")
+
+        print("----                                 history_params_list                                     |    history_costs_list ----")
+        history_params_list = f['history_params_list'][()]
+        history_costs_list = f['history_costs_list'][()]
+        for (params, cost) in zip(history_params_list, history_costs_list):
+            print(repr(params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', ') + ' | ' + str(cost))
+
+        best_params = f['best_params'][()]
+        print("---- best_params = " + repr(best_params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', ') + " ----")
+
+        best_cost = f['best_cost'][()]
+        print("---- best_cost = %d ----"%best_cost)
+
+        print("----                                   best_params_list                                       |    best_costs_list ----")
+        best_params_list = f['best_params_list'][()]
+        best_costs_list = f['best_costs_list'][()]
+        for (params, cost) in zip(best_params_list, best_costs_list):
+            print(repr(params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', ') + ' | ' + str(cost))
+        
+        last_iteration = f['last_iteration'][()]
+        print("---- last_iteration = %d ----"%last_iteration)
+
+        save_params_set = f['save_params_set'][()]
+        print("---- save_params_set ----")
+        for params in save_params_set:
+            print(repr(params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', '))
+        
+        load_neural_net_archive_filename = f['neural_net_archive_filename'][()]
+        print("---- load_neural_net_archive_filename = " + load_neural_net_archive_filename + " ----")
+

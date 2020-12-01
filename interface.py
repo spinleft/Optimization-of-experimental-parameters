@@ -2,6 +2,7 @@ import os
 import getopt
 import sys
 import numpy as np
+import h5py
 import utilities
 import learner
 from scipy import constants
@@ -11,7 +12,6 @@ import simulation
 class Interface():
     def __init__(self):
         # 实验参数
-        self.target_cost = 0
         self.num_params = 7
         self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
         self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
@@ -21,6 +21,7 @@ class Interface():
         self.sample_rate = 5000                             # 实验采样率
 
         # 训练参数
+        self.target_cost = 0
         self.initial_params_set_size = 20                   # 初始实验数量
         self.predict_good_params_set_size = 500             # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
         self.predict_random_params_set_size = 5000          # 每次迭代，生成均匀分布参数数量
@@ -211,9 +212,51 @@ class Interface():
         return costs
 
 
+def print_archive(archive_filename):
+    f = h5py.File(archive_filename, 'r')
+    print("****** 实验参数 ******")
+    num_params = f['num_params'][()]
+    print("---- num_params = %d ----"%num_params)
+    min_boundary = f['min_boundary'][()]
+    print("---- min_boundary = " + repr(min_boundary) + " ----")
+    max_boundary = f['max_boundary'][()]
+    print("---- max_boundary = " + repr(max_boundary) + " ----")
+    
+    print("****** 实验记录 ******")
+
+    print("----                                 history_params_list                                     |    history_costs_list ----")
+    history_params_list = f['history_params_list'][()]
+    history_costs_list = f['history_costs_list'][()]
+    for (params, cost) in zip(history_params_list, history_costs_list):
+        print(repr(params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', ') + ' | ' + str(cost))
+
+    best_params = f['best_params'][()]
+    print("---- best_params = " + repr(best_params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', ') + " ----")
+
+    best_cost = f['best_cost'][()]
+    print("---- best_cost = %d ----"%best_cost)
+
+    print("----                                   best_params_list                                       |    best_costs_list ----")
+    best_params_list = f['best_params_list'][()]
+    best_costs_list = f['best_costs_list'][()]
+    for (params, cost) in zip(best_params_list, best_costs_list):
+        print(repr(params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', ') + ' | ' + str(cost))
+    
+    last_iteration = f['last_iteration'][()]
+    print("---- last_iteration = %d ----"%last_iteration)
+
+    save_params_set = f['save_params_set'][()]
+    print("---- save_params_set ----")
+    for params in save_params_set:
+        print(repr(params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', '))
+    
+    load_neural_net_archive_filename = f['neural_net_archive_filename'][()]
+    print("---- load_neural_net_archive_filename = " + load_neural_net_archive_filename + " ----")
+
+
 def main(argv):
     try:
-        options, _ = getopt.getopt(argv, "hl:", ["help", "load="])
+        options, _ = getopt.getopt(argv, "hlp:", ["help", "load=", "print="])
     except getopt.GetoptError:
         sys.exit()
     load = False
@@ -222,10 +265,15 @@ def main(argv):
             print("initialize a new experiment: run interface.py with no args")
             print(
                 "continue experiments based on the archive: interface.py -l[--load] \"YYYY-MM-DD_hh-mm\"")
-        if option in ("-l", "--load"):
+            return
+        elif option in ("-l", "--load"):
             load = True
             datetime = value
-
+            return
+        elif option in ("-p", "--print"):
+            archive_filename = './archives/archive_' + value + '.txt'
+            print_archive(archive_filename)
+            return
     interface = Interface()
     learn = learner.Learner(interface)
     if load:
@@ -233,6 +281,7 @@ def main(argv):
     else:
         learn.init()
     learn.train()
+    learn.print_archive()
     learn.plot_best_costs_list()
     learn.close()
 
