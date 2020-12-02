@@ -23,8 +23,8 @@ class Interface():
         # 训练参数
         self.target_cost = 0
         self.initial_params_set_size = 20                   # 初始实验数量
-        self.predict_good_params_set_size = 500             # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
-        self.predict_random_params_set_size = 5000          # 每次迭代，生成均匀分布参数数量
+        self.predict_good_params_set_size = 100             # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
+        self.predict_random_params_set_size = 1000          # 每次迭代，生成均匀分布参数数量
         self.select_random_params_set_size = 5              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
         self.window_size = 5                                # 窗口最大大小
         self.select_good_params_set_size = [5, 5, 2, 2, 1]  # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
@@ -192,9 +192,10 @@ class Interface():
                     else:
                         t += (np.sqrt(v_i ** 2 + 2 * a * s) - v_i) / a
             min_time = np.pi * np.sqrt(k / g)
-            print("cost = %f"%(t - min_time))
+            actual_cost = t - min_time
             t += t * np.random.normal(0, 0.1)
             cost = t - min_time
+            print("actual_cost = %f, cost = %f"%(actual_cost, cost))
             if not bad:
                 costs = np.hstack((costs, cost))
             else:
@@ -256,25 +257,21 @@ def print_archive(archive_filename):
 
 
 def main(argv):
-    try:
-        options, _ = getopt.getopt(argv, "hlp:", ["help", "load=", "print="])
-    except getopt.GetoptError:
-        sys.exit()
+    option = argv[0]
+    value = argv[1]
     load = False
-    for option, value in options:
-        if option in ("-h", "--help"):
-            print("initialize a new experiment: run interface.py with no args")
-            print(
-                "continue experiments based on the archive: interface.py -l[--load] \"YYYY-MM-DD_hh-mm\"")
-            return
-        elif option in ("-l", "--load"):
-            load = True
-            datetime = value
-            return
-        elif option in ("-p", "--print"):
-            archive_filename = './archives/archive_' + value + '.h5'
-            print_archive(archive_filename)
-            return
+    if option in ("-h", "--help"):
+        print("initialize a new experiment: run interface.py with no args")
+        print(
+            "continue experiments based on the archive: interface.py -l[--load] \"YYYY-MM-DD_hh-mm\"")
+        return
+    elif option in ("-l", "--load"):
+        load = True
+        datetime = value
+    elif option in ("-p", "--print"):
+        archive_filename = './archives/archive_' + value + '.h5'
+        print_archive(archive_filename)
+        return
     interface = Interface()
     learn = learner.Learner(interface)
     if load:
