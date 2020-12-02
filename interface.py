@@ -15,19 +15,19 @@ class Interface():
         self.num_params = 7
         self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
         self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
-        self.startpoint = 12 * constants.Boltzmann * 1.5e-6
-        self.endpoint = self.startpoint / 25
-        self.tf = 10
-        self.sample_rate = 20                               # 实验采样率
+        self.startpoint = 10.
+        self.endpoint = 0.
+        self.tf = 15.71
+        self.sample_rate = 5000                             # 实验采样率
 
         # 训练参数
         self.target_cost = 0
         self.initial_params_set_size = 20                   # 初始实验数量
         self.predict_good_params_set_size = 100             # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
         self.predict_random_params_set_size = 1000          # 每次迭代，生成均匀分布参数数量
-        self.select_random_params_set_size = 5              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
-        self.window_size = 5                                # 窗口最大大小
-        self.select_good_params_set_size = [5, 5, 2, 2, 1]  # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
+        self.select_random_params_set_size = 2              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
+        self.window_size = 4                                # 窗口最大大小
+        self.select_good_params_set_size = [3, 4, 2, 1]     # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
         self.max_num_iteration = 20                         # 最大迭代次数
         self.save_params_set_size = 20                      # 存档中保存的典型参数数量
 
@@ -45,7 +45,7 @@ class Interface():
         self.load_archive_datetime = None
 
     def get_experiment_costs(self, params_set):
-        return self.get_experiment_costs_simulation(params_set)
+        return self.get_experiment_costs_test(params_set)
 
     def get_experiment_costs_ramp(self, params_set):
         costs = np.array([], dtype=float)

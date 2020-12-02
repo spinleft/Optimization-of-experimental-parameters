@@ -250,10 +250,10 @@ class Learner():
             temp_costs_set = self.get_experiment_costs(temp_params_set)
             self.history_params_list = np.vstack((self.history_params_list, temp_params_set))
             self.history_costs_list = np.hstack((self.history_costs_list, temp_costs_set))
-            select_good_costs_set = temp_costs_set[:sum(self.select_good_params_set_size)]
-            select_random_costs_set = temp_costs_set[sum(self.select_good_params_set_size):-self.window_size]
+            select_good_costs_set = temp_costs_set[:sum(self.select_good_params_set_size[:len(self.window_params_set)])]
+            select_random_costs_set = temp_costs_set[sum(self.select_good_params_set_size[:len(self.window_params_set)]):-len(self.window_params_set)]
             # 更新窗口参数的cost
-            new_window_costs_set = temp_costs_set[-self.window_size:]
+            new_window_costs_set = temp_costs_set[-len(self.window_params_set):]
             self.window_costs_set = (1 - 1 / self.max_patience) * self.window_costs_set + 1 / self.max_patience * new_window_costs_set
 
             # 将select_good_params_set替换入window_params_set或放入train_params_set
@@ -336,6 +336,8 @@ class Learner():
                 # 随机产生新的参数，选取最好的加入窗口
                 new_init_params_set = self.get_init_params()
                 new_init_costs_set = self.get_experiment_costs(new_init_params_set)
+                self.history_params_list = np.vstack((self.history_params_list, new_init_params_set))
+                self.history_costs_list = np.hstack((self.history_costs_list, new_init_costs_set))
                 self.init_params_set = np.vstack((self.init_params_set, new_init_params_set))
                 self.init_costs_set = np.hstack((self.init_costs_set, new_init_costs_set))
                 self.window_params_set = np.vstack((self.window_params_set, self.init_params_set))

@@ -126,8 +126,9 @@ def params_continue_find(params):
         slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
     if slope <= 0 and abs(slope) < 50:
         # 限制上下限
-        wave = waveform(1, 0, 1, 50000, params)
-        if np.max(wave) <= 1 and np.min(wave) >= 0:
+        wave = waveform(1, 0, 1, 100000, params)
+        # if np.max(wave) <= 1 and np.min(wave) >= 0:
+        if np.max(wave) <= 1:
             return False
         else:
             return True
