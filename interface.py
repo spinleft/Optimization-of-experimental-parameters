@@ -15,10 +15,10 @@ class Interface():
         self.num_params = 7
         self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
         self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
-        self.startpoint = 10
-        self.endpoint = 0
-        self.tf = 15.71
-        self.sample_rate = 5000                             # 实验采样率
+        self.startpoint = 12 * constants.Boltzmann * 1.5e-6
+        self.endpoint = self.startpoint / 25
+        self.tf = 10
+        self.sample_rate = 20                               # 实验采样率
 
         # 训练参数
         self.target_cost = 0
@@ -37,7 +37,7 @@ class Interface():
         self.signal_dir = "//192.168.0.134/Share/mlparams/index"                # 实验信号文件目录
         self.result_dir = "./results"                                           # 实验结果目录
         self.signal_index = 1                                                   # 信号文件初始序号
-        self.init_result_index = 12                                             # 初始结果序号
+        self.init_result_index = 183                                            # 初始结果序号
         self.result_index = self.init_result_index
 
         # 训练文件参数
@@ -45,7 +45,7 @@ class Interface():
         self.load_archive_datetime = None
 
     def get_experiment_costs(self, params_set):
-        return self.get_experiment_costs_test(params_set)
+        return self.get_experiment_costs_simulation(params_set)
 
     def get_experiment_costs_ramp(self, params_set):
         costs = np.array([], dtype=float)
@@ -53,18 +53,26 @@ class Interface():
             # 生成波形
             wave1 = utilities.waveform_linear(params[0], params[1], self.tf, self.sample_rate)
             wave2 = utilities.waveform_linear(params[2], params[3], self.tf, self.sample_rate)
-            wave3 = utilities.waveform_linear(params[4], params[5], self.tf, self.sample_rate)
-            wave4 = utilities.waveform_linear(params[0], params[7], self.tf, self.sample_rate)
+            # wave3 = utilities.waveform_linear(params[4], params[5], self.tf, self.sample_rate)
+            # wave4 = utilities.waveform_linear(params[0], params[7], self.tf, self.sample_rate)
             # 保存波形到文件
             wave1_filename = os.path.join(self.wave_dir, '1.txt')
             wave2_filename = os.path.join(self.wave_dir, '2.txt')
-            wave3_filename = os.path.join(self.wave_dir, '3.txt')
-            wave4_filename = os.path.join(self.wave_dir, '4.txt')
+            # wave3_filename = os.path.join(self.wave_dir, '3.txt')
+            # wave4_filename = os.path.join(self.wave_dir, '4.txt')
+            const3_filename = os.path.join(self.wave_dir, '3.txt')
+            const4_filename = os.path.join(self.wave_dir, '4.txt')
+            const5_filename = os.path.join(self.wave_dir, '5.txt')
+            const6_filename = os.path.join(self.wave_dir, '6.txt')
 
             utilities.save_params_to_file(wave1_filename, wave1)
             utilities.save_params_to_file(wave2_filename, wave2)
-            utilities.save_params_to_file(wave3_filename, wave3)
-            utilities.save_params_to_file(wave4_filename, wave4)
+            # utilities.save_params_to_file(wave3_filename, wave3)
+            # utilities.save_params_to_file(wave4_filename, wave4)
+            utilities.save_params_to_file(const3_filename, [params[4]])
+            utilities.save_params_to_file(const4_filename, [params[5]])
+            utilities.save_params_to_file(const5_filename, [params[6]])
+            utilities.save_params_to_file(const6_filename, [params[7]])
             # 发送信号文件
             signal_filename = os.path.join(
                 self.signal_dir, str(self.signal_index) + '.txt')
@@ -87,8 +95,12 @@ class Interface():
                 # 保存波形到文件
                 utilities.save_params_to_file(wave1_filename, wave1)
                 utilities.save_params_to_file(wave2_filename, wave2)
-                utilities.save_params_to_file(wave3_filename, wave3)
-                utilities.save_params_to_file(wave4_filename, wave4)
+                # utilities.save_params_to_file(wave3_filename, wave3)
+                # utilities.save_params_to_file(wave4_filename, wave4)
+                utilities.save_params_to_file(const3_filename, [params[4]])
+                utilities.save_params_to_file(const4_filename, [params[5]])
+                utilities.save_params_to_file(const5_filename, [params[6]])
+                utilities.save_params_to_file(const6_filename, [params[7]])
                 # 发送信号文件
                 signal_filename = os.path.join(
                     self.signal_dir, str(self.signal_index) + '.txt')
@@ -208,8 +220,8 @@ class Interface():
             wave = utilities.waveform(
                 self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
             cost = simulation.calculate_temperature(wave, self.sample_rate)
-            cost += cost * np.random.normal(0, 0.05)
-            cost = np.log(cost / 0.08)
+            cost += cost * np.random.normal(0, 0.1)
+            cost = np.log(cost / 0.084)
             costs = np.hstack((costs, cost))
         return costs
 

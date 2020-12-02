@@ -2,9 +2,7 @@ import os
 import time
 import datetime
 import numpy as np
-import tensorflow as tf
 import matplotlib.pyplot as plt
-from scipy import constants
 from scipy import interpolate
 
 
@@ -126,7 +124,7 @@ def params_continue_find(params):
     slope = coef[0]
     for i in range(l):
         slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
-    if slope <= 0 and abs(slope) < 10:
+    if slope <= 0 and abs(slope) < 50:
         # 限制上下限
         wave = waveform(1, 0, 1, 50000, params)
         if np.max(wave) <= 1 and np.min(wave) >= 0:
@@ -136,7 +134,6 @@ def params_continue_find(params):
     else:
         return True
 
-# def get_random_params_set(min_boundary, max_boundary, params_set_size, sample_rate):
 def get_random_params_set(min_boundary, max_boundary, params_set_size):
     rng = np.random.default_rng()
     params_set = np.zeros(shape=(params_set_size, len(min_boundary)))
@@ -149,7 +146,6 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size):
     return params_set
 
 
-# def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size, sample_rate):
 def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size):
     rng = np.random.default_rng()
     std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))

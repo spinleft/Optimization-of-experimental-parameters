@@ -27,7 +27,7 @@ class Learner():
         self.layer_dims = [64] * 5
         # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
         self.train_threshold_ratio = 0.01
-        self.batch_size = 16                    # 神经网络训练的批量大小
+        self.batch_size = 8                     # 神经网络训练的批量大小
         self.dropout_prob = 0.5                 # 神经元随机失效的概率
         self.regularisation_coefficient = 1e-8  # loss正则化的系数
         self.max_epoch = 1000                   # 最大训练epoch
@@ -142,8 +142,12 @@ class Learner():
         # 记录初始化的最好参数和结果
         self.best_params = self.init_params_set[indexes[0]]
         self.best_cost = self.init_costs_set[indexes[0]]
-        print("The best parameters: " + str(self.best_params))
-        print("The best cost: " + str(self.best_cost))
+        print("The best params in iteration 0: ")
+        print(self.best_params)
+        print("The best cost in iteration 0: ")
+        print(self.best_cost)
+        print("window_cost_set:")
+        print(self.window_costs_set)
         # 新建记录列表
         self.best_params_list = np.array([self.best_params], dtype=float)
         self.best_costs_list = np.array([self.best_cost], dtype=float)
@@ -322,12 +326,6 @@ class Learner():
             else:
                 patience_count += 1
             if patience_count > self.max_patience:
-                # 重做一遍实验，避免偶然因素
-                self.window_costs_set = self.get_experiment_costs(
-                    self.window_params_set)
-                indexes = np.argsort(self.window_costs_set)
-                self.window_params_set = self.window_params_set[indexes]
-                self.window_costs_set = self.window_costs_set[indexes]
                 # 将部分窗口参数划入训练参数集
                 self.train_params_set = np.vstack(
                     (self.train_params_set, self.window_params_set[self.window_retain_size:]))
@@ -335,6 +333,16 @@ class Learner():
                     (self.train_costs_set, self.window_costs_set[self.window_retain_size:]))
                 self.window_params_set = self.window_params_set[:self.window_retain_size]
                 self.window_costs_set = self.window_costs_set[:self.window_retain_size]
+                # 随机产生新的参数，选取最好的加入窗口
+                new_init_params_set = self.get_init_params()
+                new_init_costs_set = self.get_experiment_costs(new_init_params_set)
+                self.init_params_set = np.vstack((self.init_params_set, new_init_params_set))
+                self.init_costs_set = np.hstack((self.init_costs_set, new_init_costs_set))
+                self.window_params_set = np.vstack((self.window_params_set, self.init_params_set))
+                self.window_costs_set = np.hstack((self.window_costs_set, self.init_costs_set))
+                indexes = np.argsort(self.window_costs_set)
+                self.window_params_set = self.window_params_set[indexes[:self.window_size]]
+                self.window_costs_set = self.window_costs_set[indexes[:self.window_size]]
                 # 重置网络权重
                 self._reset_neural_net()
                 patience_count = 0
