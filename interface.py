@@ -192,8 +192,9 @@ class Interface():
                     else:
                         t += (np.sqrt(v_i ** 2 + 2 * a * s) - v_i) / a
             min_time = np.pi * np.sqrt(k / g)
+            print("cost = %f"%(t - min_time))
+            t += t * np.random.normal(0.1)
             cost = t - min_time
-            cost += cost * np.random.normal(0, 0.1)
             if not bad:
                 costs = np.hstack((costs, cost))
             else:
