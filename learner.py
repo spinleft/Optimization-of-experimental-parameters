@@ -56,7 +56,7 @@ class Learner():
         self.archive_file_prefix = 'archive_'                       # 存档前缀
         self.start_datetime = utilities.get_datetime_now_string()   # 存档日期
         self.archive_filename = os.path.join(self.archive_dir,
-                                             self.archive_file_prefix+self.start_datetime+'.txt')
+                                             self.archive_file_prefix+self.start_datetime+'.h5')
         # 存档
         self.archive = {'num_params': self.num_params,
                         'min_boundary': self.min_boundary,
@@ -129,6 +129,8 @@ class Learner():
         print("Getting experiment costs...")
         self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
+        self.history_params_list = self.init_params_set
+        self.history_costs_list = self.init_costs_set
 
         # 筛选好的参数放入窗口，最多不超过初始参数的一半
         max_size = min(self.window_size, self.initial_params_set_size // 2)
@@ -140,6 +142,8 @@ class Learner():
         # 记录初始化的最好参数和结果
         self.best_params = self.init_params_set[indexes[0]]
         self.best_cost = self.init_costs_set[indexes[0]]
+        print("The best parameters: " + str(self.best_params))
+        print("The best cost: " + str(self.best_cost))
         # 新建记录列表
         self.best_params_list = np.array([self.best_params], dtype=float)
         self.best_costs_list = np.array([self.best_cost], dtype=float)
@@ -157,7 +161,7 @@ class Learner():
     def load(self, start_datetime):
         # 加载存档
         load_archive_filename = os.path.join(
-            self.archive_dir, self.archive_file_prefix+start_datetime+'.txt')
+            self.archive_dir, self.archive_file_prefix+start_datetime+'.h5')
         # 从存档中读取参数
         print("Loading...")
         self._load_archive(load_archive_filename)
@@ -167,6 +171,8 @@ class Learner():
         print("Iteration %d..." % self.last_iteration)
         self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
+        self.history_params_list = np.vstack((self.history_params_list, self.init_params_set))
+        self.history_costs_list = np.hstack((self.history_costs_list, self.init_costs_set))
 
         # 筛选好的参数放入窗口，最多不超过初始参数的一半
         max_size = min(self.window_size, len(self.init_costs_set) // 2)
@@ -238,6 +244,8 @@ class Learner():
             # Step4: 获取实验结果
             temp_params_set = np.vstack((select_good_params_set, select_random_params_set, self.window_params_set))
             temp_costs_set = self.get_experiment_costs(temp_params_set)
+            self.history_params_list = np.vstack((self.history_params_list, temp_params_set))
+            self.history_costs_list = np.hstack((self.history_costs_list, temp_costs_set))
             select_good_costs_set = temp_costs_set[:sum(self.select_good_params_set_size)]
             select_random_costs_set = temp_costs_set[sum(self.select_good_params_set_size):-self.window_size]
             # 更新窗口参数的cost
@@ -434,8 +442,8 @@ class Learner():
             else:
                 save_params_set = np.vstack(
                     (save_params_set, params_subset[index]))
-        self.archive.update({'history_params_list': temp_params_set,
-                             'history_costs_list': temp_costs_set,
+        self.archive.update({'history_params_list': self.history_params_list,
+                             'history_costs_list': self.history_costs_list,
                              'best_params_list': self.best_params_list,
                              'best_costs_list': self.best_costs_list,
                              'best_params': self.best_params,
@@ -470,6 +478,8 @@ class Learner():
             self.max_boundary = max_boundary
         
         # 实验记录
+        self.history_params_list = f['history_params_list'][()]
+        self.history_costs_list = f['history_costs_list'][()]
         self.best_params = f['best_params'][()]
         self.best_cost = f['best_cost'][()]
         self.best_params_list = f['best_params_list'][()]

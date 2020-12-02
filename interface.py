@@ -271,7 +271,7 @@ def main(argv):
             datetime = value
             return
         elif option in ("-p", "--print"):
-            archive_filename = './archives/archive_' + value + '.txt'
+            archive_filename = './archives/archive_' + value + '.h5'
             print_archive(archive_filename)
             return
     interface = Interface()
