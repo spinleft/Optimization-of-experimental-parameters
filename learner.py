@@ -412,11 +412,11 @@ class Learner():
 
     def get_experiment_costs(self, params_set):
         # 并行实现
-        multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
-            np.array([params]),)) for params in params_set]
-        costs_list = [result.get() for result in multiple_results]
-        costs = np.array(costs_list).reshape(-1,)
-        # costs = self.interface.get_experiment_costs(params_set)
+        # multiple_results = [self.pool.apply_async(self.interface.get_experiment_costs, args=(
+        #     np.array([params]),)) for params in params_set]
+        # costs_list = [result.get() for result in multiple_results]
+        # costs = np.array(costs_list).reshape(-1,)
+        costs = self.interface.get_experiment_costs(params_set)
         return costs
 
     def _save_archive(self):
