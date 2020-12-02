@@ -143,8 +143,8 @@ def get_random_params_set(min_boundary, max_boundary, params_set_size):
     
     for i in range(params_set_size):
         params = rng.uniform(min_boundary, max_boundary)
-        # while params_continue_find(params):
-        #     params = rng.uniform(min_boundary, max_boundary)
+        while params_continue_find(params):
+            params = rng.uniform(min_boundary, max_boundary)
         params_set[i] = params
     return params_set
 
@@ -160,12 +160,12 @@ def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, para
         params = np.where(cond, params, min_boundary)
         cond = params <= max_boundary
         params = np.where(cond, params, max_boundary)
-        # while params_continue_find(params):
-        #     params = rng.normal(base_params, std_dev_scale)
-        #     cond = params >= min_boundary
-        #     params = np.where(cond, params, min_boundary)
-        #     cond = params <= max_boundary
-        #     params = np.where(cond, params, max_boundary)
+        while params_continue_find(params):
+            params = rng.normal(base_params, std_dev_scale)
+            cond = params >= min_boundary
+            params = np.where(cond, params, min_boundary)
+            cond = params <= max_boundary
+            params = np.where(cond, params, max_boundary)
         params_set[i] = params
     return params_set
 
