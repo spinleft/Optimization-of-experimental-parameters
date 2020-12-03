@@ -109,10 +109,10 @@ class NeuralNet():
         params_scaled = self._scale_params(params)
         costs_scaled = self._scale_costs(costs)
         if validation_params is None or validation_costs is None:
-            early_stopping = EarlyStopping(
-                monitor='loss', min_delta=self.train_threshold_ratio, patience=5000, mode='min')
+            # early_stopping = EarlyStopping(
+            #     monitor='loss', min_delta=self.train_threshold_ratio, patience=5000, mode='min')
             history = self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
-                                    batch_size=self.batch_size, verbose=0, callbacks=[early_stopping])
+                                    batch_size=self.batch_size, verbose=0)
         else:
             validation_params_scaled = self._scale_params(validation_params)
             validation_costs_scaled = self._scale_costs(validation_costs)

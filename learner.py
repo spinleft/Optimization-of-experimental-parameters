@@ -30,7 +30,8 @@ class Learner():
         self.batch_size = 512                    # 神经网络训练的批量大小
         self.dropout_prob = 0.0                 # 神经元随机失效的概率
         self.regularisation_coefficient = 0.0   # loss正则化的系数
-        self.max_epoch = 5000                   # 最大训练epoch
+        self.max_epoch = 1000
+        self.epoch = 200
 
         # 训练参数
         self.target_cost = interface.target_cost
@@ -194,15 +195,21 @@ class Learner():
         for i in range(self.last_iteration + 1, self.last_iteration + self.max_num_iteration):
             print("Iteration %d..." % i)
             # Step1: 训练神经网络
-            history = self.net.fit(self.history_params_list,
-                                   self.history_costs_list,
-                                   self.max_epoch)
-            print("last loss = %f"%history.history['loss'][-1])
-            print("training epoches = %d" % len(history.epoch))
-            # 测量神经网络拟合误差
-            predict_history_costs_set = self.net.predict_costs(self.history_params_list)
-            predict_loss = np.average(np.abs(self.history_costs_list - predict_history_costs_set))
-            print("predict_loss = %f" %predict_loss)
+            last_predict_loss = float('inf')
+            while True:
+                history = self.net.fit(self.history_params_list,
+                                    self.history_costs_list,
+                                    self.epoch)
+                print("last loss = %f"%history.history['loss'][-1])
+                print("training epoches = %d" % len(history.epoch))
+                # 测量神经网络拟合误差
+                predict_history_costs_set = self.net.predict_costs(self.history_params_list)
+                predict_loss = np.average(np.abs(self.history_costs_list - predict_history_costs_set))
+                print("predict_loss = %f" %predict_loss)
+                if last_predict_loss < predict_loss:
+                    break
+                else:
+                    last_predict_loss = predict_loss
             # Step2: 产生预测参数
             index = (iteration - 1) % len(self.predict_good_params_set_size)
             predict_good_params_set = []
