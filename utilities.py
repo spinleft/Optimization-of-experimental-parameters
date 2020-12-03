@@ -126,7 +126,7 @@ def params_in_condition(params):
         slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
     if slope <= 0 and abs(slope) < 50:
         # 限制上下限
-        wave = waveform(1, 0, 1, 2000, params)
+        wave = waveform(1, 0, 1, 80000, params)
         if np.max(wave) <= 1:
             return True
         else:

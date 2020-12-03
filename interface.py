@@ -18,7 +18,7 @@ class Interface():
         self.startpoint = 10.
         self.endpoint = 0.
         self.tf = 15.71
-        self.sample_rate = 100                             # 实验采样率
+        self.sample_rate = 5000                             # 实验采样率
 
         # 训练参数
         self.target_cost = 0
