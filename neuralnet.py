@@ -52,6 +52,7 @@ class NeuralNet():
         for layer_dim in layer_dims:
             self.model.add(layers.Dense(layer_dim,
                                         activation='gelu',
+                                        bias_initializer='glorot_uniform',
                                         kernel_regularizer=regularizers.l2(
                                             self.regularisation_coefficient),
                                         input_shape=(prev_layer_dim,)))
@@ -95,6 +96,7 @@ class NeuralNet():
     def _unscale_cost(self, costs_scaled):
         costs_unscaled = costs_scaled * self.costs_stdev
         costs_unscaled += self.costs_mean
+        return costs_unscaled
 
     def _loss_and_metrics(self, params, costs):
         loss, metrics = self.model.evaluate(params, costs, verbose=0)
@@ -103,18 +105,28 @@ class NeuralNet():
     def get_loss(self, params, costs):
         return self._loss_and_metrics(params, costs)[0]
 
-    def fit(self, params, costs, max_epoch, validation_params, validation_costs):
+    def fit(self, params, costs, max_epoch, validation_params=None, validation_costs=None):
         params_scaled = self._scale_params(params)
         costs_scaled = self._scale_costs(costs)
+        if validation_params is None or validation_costs is None:
+            early_stopping = EarlyStopping(
+                monitor='loss', min_delta=self.train_threshold_ratio, patience=5000, mode='min')
+            history = self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
+                                    batch_size=self.batch_size, verbose=0, callbacks=[early_stopping])
+        else:
+            validation_params_scaled = self._scale_params(validation_params)
+            validation_costs_scaled = self._scale_costs(validation_costs)
+            early_stopping = EarlyStopping(
+                monitor='val_loss', min_delta=self.train_threshold_ratio, patience=6, mode='min')
 
-        early_stopping = EarlyStopping(
-            monitor='val_loss', min_delta=self.train_threshold_ratio, patience=6, mode='min')
-
-        self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
-                       batch_size=self.batch_size, verbose=0, callbacks=[early_stopping], validation_data=(validation_params, validation_costs))
+            history = self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
+                                    batch_size=self.batch_size, verbose=0, callbacks=[early_stopping], validation_data=(validation_params_scaled, validation_costs_scaled))
+        return history
 
     def predict_costs(self, params):
-        return np.array(self.model.predict(params, verbose=0, use_multiprocessing=True))
+        costs_scaled = np.array(self.model.predict(params, verbose=0, use_multiprocessing=True)).flatten()
+        costs_unscaled = self._unscale_cost(costs_scaled)
+        return costs_unscaled
 
     def reset_weights(self):
         for layer in self.model.layers:
@@ -123,12 +135,13 @@ class NeuralNet():
                     continue
                 var = getattr(layer, k.replace("_initializer", ""))
                 var.assign(initializer(var.shape, var.dtype))
-    
+
     def get_weights(self):
         return self.model.get_weights()
 
     def set_weights(self, weights):
         self.model.set_weights(weights)
+
 
 def gelu(x):
     return 0.5 * x * (1 + tf.tanh(tf.sqrt(2 / np.pi) * (x + 0.044715 * tf.pow(x, 3))))

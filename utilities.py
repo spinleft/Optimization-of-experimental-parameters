@@ -116,7 +116,7 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     plt.plot(t * tf, wave)
     plt.show()
 
-def params_continue_find(params):
+def params_in_condition(params):
     # 限制初始斜率
     a_1 = -1 - np.sum(params)
     coef = np.hstack((a_1, params))
@@ -126,44 +126,36 @@ def params_continue_find(params):
         slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
     if slope <= 0 and abs(slope) < 50:
         # 限制上下限
-        wave = waveform(1, 0, 1, 100000, params)
-        # if np.max(wave) <= 1 and np.min(wave) >= 0:
+        wave = waveform(1, 0, 1, 2000, params)
         if np.max(wave) <= 1:
-            return False
-        else:
             return True
+        else:
+            return False
     else:
-        return True
+        return False
 
-def get_random_params_set(min_boundary, max_boundary, params_set_size):
+def get_init_params_set(min_boundary, max_boundary, params_set_size):
     rng = np.random.default_rng()
     params_set = np.zeros(shape=(params_set_size, len(min_boundary)))
-    
     for i in range(params_set_size):
         params = rng.uniform(min_boundary, max_boundary)
-        while params_continue_find(params):
+        while not params_in_condition(params):
             params = rng.uniform(min_boundary, max_boundary)
         params_set[i] = params
     return params_set
 
+def get_random_params_set(min_boundary, max_boundary, params_set_size):
+    rng = np.random.default_rng()
+    return rng.uniform(min_boundary, max_boundary, size=(params_set_size, len(min_boundary)))
 
 def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size):
     rng = np.random.default_rng()
     std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))
-    params_set = np.zeros(shape=(params_set_size, len(min_boundary)))
-    for i in range(params_set_size):
-        params = rng.normal(base_params, std_dev_scale)
-        cond = params >= min_boundary
-        params = np.where(cond, params, min_boundary)
-        cond = params <= max_boundary
-        params = np.where(cond, params, max_boundary)
-        while params_continue_find(params):
-            params = rng.normal(base_params, std_dev_scale)
-            cond = params >= min_boundary
-            params = np.where(cond, params, min_boundary)
-            cond = params <= max_boundary
-            params = np.where(cond, params, max_boundary)
-        params_set[i] = params
+    params_set = rng.normal(base_params, std_dev_scale, size=(params_set_size, len(min_boundary)))
+    cond = params_set >= min_boundary
+    params_set = np.where(cond, params_set, min_boundary)
+    cond = params_set <= max_boundary
+    params_set = np.where(cond, params_set, max_boundary)
     return params_set
 
 

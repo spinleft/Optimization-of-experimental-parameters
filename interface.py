@@ -18,17 +18,16 @@ class Interface():
         self.startpoint = 10.
         self.endpoint = 0.
         self.tf = 15.71
-        self.sample_rate = 5000                             # 实验采样率
+        self.sample_rate = 100                             # 实验采样率
 
         # 训练参数
         self.target_cost = 0
+        self.max_num_iteration = 100                        # 最大迭代次数
         self.initial_params_set_size = 20                   # 初始实验数量
-        self.predict_good_params_set_size = 100             # 每次迭代，以窗口中每个参数为均值生成正态分布参数数量
-        self.predict_random_params_set_size = 1000          # 每次迭代，生成均匀分布参数数量
-        self.select_random_params_set_size = 2              # 每次迭代，选择均匀分布参数数量，作为下一次实验参数
-        self.window_size = 4                                # 窗口最大大小
-        self.select_good_params_set_size = [3, 4, 2, 1]     # 对窗口中每个参数产生的正态分布参数，选择若干数量作为下一次实验参数
-        self.max_num_iteration = 20                         # 最大迭代次数
+        self.subsequent_params_set_size = 20
+        self.window_size = [10 + 2 * i for i in range(0, self.max_num_iteration)]
+        self.predict_good_params_set_size = [i * 10000 for i in [20, 15, 10, 5, 0]]
+        self.predict_random_params_set_size = [i * 100000 for i in [0, 5, 10, 15, 20]]
         self.save_params_set_size = 20                      # 存档中保存的典型参数数量
 
         # 实验文件参数
@@ -178,7 +177,8 @@ class Interface():
         return costs
 
     def get_experiment_costs_test(self, params_set):
-        costs = np.array([], dtype=float)
+        actual_costs = []
+        costs = []
         for params in params_set:
             k = 5.0
             g = 9.8
@@ -204,14 +204,18 @@ class Interface():
                     else:
                         t += (np.sqrt(v_i ** 2 + 2 * a * s) - v_i) / a
             min_time = np.pi * np.sqrt(k / g)
-            actual_cost = t - min_time
-            t += t * np.random.normal(0, 0.1)
-            cost = t - min_time
-            print("actual_cost = %f, cost = %f"%(actual_cost, cost))
             if not bad:
-                costs = np.hstack((costs, cost))
+                actual_cost = t - min_time
+                actual_costs.append(actual_cost)
+                # t += t * np.random.normal(0, 0.1)
+                cost = t - min_time
+                costs.append(cost)
             else:
-                costs = np.hstack((costs, 1000.0))
+                actual_costs.append(10.)
+                costs.append(10.)
+            print("actual_cost = %f, cost = %f"%(actual_cost, cost))
+        actual_costs = np.array(actual_costs)
+        costs = np.array(costs)
         return costs
 
     def get_experiment_costs_simulation(self, params_set):
@@ -269,21 +273,22 @@ def print_archive(archive_filename):
 
 
 def main(argv):
-    option = argv[0]
-    value = argv[1]
     load = False
-    if option in ("-h", "--help"):
-        print("initialize a new experiment: run interface.py with no args")
-        print(
-            "continue experiments based on the archive: interface.py -l[--load] \"YYYY-MM-DD_hh-mm\"")
-        return
-    elif option in ("-l", "--load"):
-        load = True
-        datetime = value
-    elif option in ("-p", "--print"):
-        archive_filename = './archives/archive_' + value + '.h5'
-        print_archive(archive_filename)
-        return
+    if len(argv) != 0:
+        option = argv[0]
+        value = argv[1]
+        if option in ("-h", "--help"):
+            print("initialize a new experiment: run interface.py with no args")
+            print(
+                "continue experiments based on the archive: interface.py -l[--load] \"YYYY-MM-DD_hh-mm\"")
+            return
+        elif option in ("-l", "--load"):
+            load = True
+            datetime = value
+        elif option in ("-p", "--print"):
+            archive_filename = './archives/archive_' + value + '.h5'
+            print_archive(archive_filename)
+            return
     interface = Interface()
     learn = learner.Learner(interface)
     if load:
