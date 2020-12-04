@@ -207,7 +207,7 @@ class Interface():
             if not bad:
                 actual_cost = t - min_time
                 actual_costs.append(actual_cost)
-                # t += t * np.random.normal(0, 0.1)
+                t += t * np.random.normal(0, 0.1)
                 cost = t - min_time
                 costs.append(cost)
             else:
@@ -216,7 +216,7 @@ class Interface():
             print("actual_cost = %f, cost = %f"%(actual_cost, cost))
         actual_costs = np.array(actual_costs)
         costs = np.array(costs)
-        return costs
+        return (actual_cost, costs)
 
     def get_experiment_costs_simulation(self, params_set):
         costs = np.array([], dtype=float)
