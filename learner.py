@@ -229,7 +229,7 @@ class Learner():
             self.history_params_list = np.vstack((self.history_params_list, select_params_set))
             self.history_costs_list = np.hstack((self.history_costs_list, select_costs_set))
             # 测量神经网络预测误差
-            predict_select_costs_set = self.net.predict_costs(self.select_params_set)
+            predict_select_costs_set = self.net.predict_costs(select_params_set)
             predict_loss = np.average(np.abs(select_costs_set - predict_select_costs_set))
             print("predict_loss = %f" %predict_loss)
             # 得到新的窗口
