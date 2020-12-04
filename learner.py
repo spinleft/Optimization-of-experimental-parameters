@@ -200,10 +200,9 @@ class Learner():
             print("last loss = %f"%history.history['loss'][-1])
             print("training epoches = %d" % len(history.epoch))
             # 测量神经网络拟合误差
-            predict_history_costs_set = self.net.predict_costs(self.history_params_list)
-            predict_loss = np.average(np.abs(self.history_costs_list - predict_history_costs_set))
-            np.var
-            print("predict_loss = %f" %predict_loss)
+            fit_history_costs_set = self.net.predict_costs(self.history_params_list)
+            fit_loss = np.average(np.abs(self.history_costs_list - fit_history_costs_set))
+            print("fit_loss = %f" %fit_loss)
             # Step2: 产生预测参数
             index = (iteration - 1) % len(self.predict_good_params_set_size)
             # index = 0
@@ -229,7 +228,10 @@ class Learner():
             select_costs_set = self.get_experiment_costs(select_params_set)
             self.history_params_list = np.vstack((self.history_params_list, select_params_set))
             self.history_costs_list = np.hstack((self.history_costs_list, select_costs_set))
-
+            # 测量神经网络预测误差
+            predict_select_costs_set = self.net.predict_costs(self.select_params_set)
+            predict_loss = np.average(np.abs(select_costs_set - predict_select_costs_set))
+            print("predict_loss = %f" %predict_loss)
             # 得到新的窗口
             indexes = np.argsort(self.history_costs_list)
             self.window_params_set = self.history_params_list[indexes[:self.window_size[iteration]]]
