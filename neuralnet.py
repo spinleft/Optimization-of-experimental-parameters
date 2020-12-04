@@ -112,7 +112,7 @@ class NeuralNet():
             early_stopping = EarlyStopping(
                 monitor='loss', min_delta=self.train_threshold_ratio, patience=3, mode='min')
             history = self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
-                                    batch_size=self.batch_size, verbose=0)
+                                    batch_size=self.batch_size, verbose=0, use_multiprocessing=True)
         else:
             validation_params_scaled = self._scale_params(validation_params)
             validation_costs_scaled = self._scale_costs(validation_costs)

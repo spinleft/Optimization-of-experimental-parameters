@@ -26,7 +26,7 @@ class Learner():
         # 神经网络超参数
         self.layer_dims = [128] * 5
         # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
-        self.train_threshold_ratio = 0.0
+        self.train_threshold_ratio = 0.01
         self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.0                 # 神经元随机失效的概率
         self.regularisation_coefficient = 0.0   # loss正则化的系数
