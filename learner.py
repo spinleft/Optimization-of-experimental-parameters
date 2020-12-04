@@ -24,7 +24,7 @@ class Learner():
             raise ValueError
 
         # 神经网络超参数
-        self.layer_dims = [64] * 10
+        self.layer_dims = [128] * 10
         # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
         self.train_threshold_ratio = 0.0
         self.batch_size = 512                    # 神经网络训练的批量大小
