@@ -216,7 +216,7 @@ class Interface():
             print("actual_cost = %f, cost = %f"%(actual_cost, cost))
         actual_costs = np.array(actual_costs)
         costs = np.array(costs)
-        return (actual_cost, costs)
+        return (actual_costs, costs)
 
     def get_experiment_costs_simulation(self, params_set):
         costs = np.array([], dtype=float)
