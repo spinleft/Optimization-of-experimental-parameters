@@ -124,7 +124,8 @@ class NeuralNet():
         return history
 
     def predict_costs(self, params):
-        costs_scaled = np.array(self.model.predict(params, verbose=0, use_multiprocessing=True)).flatten()
+        params_scaled = self._scale_params(params)
+        costs_scaled = np.array(self.model.predict(params_scaled, verbose=0, use_multiprocessing=True)).flatten()
         costs_unscaled = self._unscale_cost(costs_scaled)
         return costs_unscaled
 
