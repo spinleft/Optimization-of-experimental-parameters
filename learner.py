@@ -205,8 +205,8 @@ class Learner():
             np.var
             print("predict_loss = %f" %predict_loss)
             # Step2: 产生预测参数
-            # index = (iteration - 1) % len(self.predict_good_params_set_size)
-            index = 0
+            index = (iteration - 1) % len(self.predict_good_params_set_size)
+            # index = 0
             predict_good_params_set = []
             for window_params in self.window_params_set:
                 predict_good_params_set.append(self.get_predict_good_params_set(window_params, self.predict_good_params_set_size[index]))
