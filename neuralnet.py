@@ -56,7 +56,7 @@ class NeuralNet():
                                         # kernel_regularizer=regularizers.l2(
                                         #     self.regularisation_coefficient),
                                         input_shape=(prev_layer_dim,)))
-            # self.model.add(layers.Dropout(self.dropout_prob))
+            self.model.add(layers.Dropout(self.dropout_prob))
             prev_layer_dim = layer_dim
         self.model.add(layers.Dense(1))
         self.model.compile(optimizer='rmsprop', loss='mae', metrics=['mse'])
