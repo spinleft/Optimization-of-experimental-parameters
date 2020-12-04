@@ -32,7 +32,7 @@ class Learner():
         self.regularisation_coefficient = 0.0   # loss正则化的系数
         self.max_epoch = 1000
         self.step_epoch = 100
-        self.step_patience = 50
+        self.step_patience = 200
 
         # 训练参数
         self.target_cost = interface.target_cost
