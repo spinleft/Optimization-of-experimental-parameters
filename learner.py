@@ -30,9 +30,7 @@ class Learner():
         self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.0                 # 神经元随机失效的概率
         self.regularisation_coefficient = 0.0   # loss正则化的系数
-        self.max_epoch = 1000
-        self.step_epoch = 100
-        self.step_patience = 10
+        self.max_epoch = 5000
 
         # 训练参数
         self.target_cost = interface.target_cost
@@ -198,7 +196,7 @@ class Learner():
             # Step1: 训练神经网络
             history = self.net.fit(self.history_params_list,
                                 self.history_costs_list,
-                                self.step_epoch)
+                                self.max_epoch)
             print("last loss = %f"%history.history['loss'][-1])
             print("training epoches = %d" % len(history.epoch))
             # 测量神经网络拟合误差
