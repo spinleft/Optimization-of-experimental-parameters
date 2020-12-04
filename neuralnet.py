@@ -59,7 +59,7 @@ class NeuralNet():
             self.model.add(layers.Dropout(self.dropout_prob))
             prev_layer_dim = layer_dim
         self.model.add(layers.Dense(1))
-        self.model.compile(optimizer='rmsprop', loss='mse', metrics=['mae'])
+        self.model.compile(optimizer='rmsprop', loss='mae', metrics=['mse'])
 
     def load(self, archive, filename):
         # 神经网络的超参数
