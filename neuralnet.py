@@ -53,8 +53,8 @@ class NeuralNet():
             self.model.add(layers.Dense(layer_dim,
                                         activation='gelu',
                                         bias_initializer='glorot_uniform',
-                                        # kernel_regularizer=regularizers.l2(
-                                        #     self.regularisation_coefficient),
+                                        kernel_regularizer=regularizers.l2(
+                                            self.regularisation_coefficient),
                                         input_shape=(prev_layer_dim,)))
             self.model.add(layers.Dropout(self.dropout_prob))
             prev_layer_dim = layer_dim
@@ -117,7 +117,7 @@ class NeuralNet():
             validation_params_scaled = self._scale_params(validation_params)
             validation_costs_scaled = self._scale_costs(validation_costs)
             early_stopping = EarlyStopping(
-                monitor='val_loss', min_delta=self.train_threshold_ratio, patience=3, mode='min')
+                monitor='val_loss', min_delta=self.train_threshold_ratio, patience=500, mode='min')
 
             history = self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
                                     batch_size=self.batch_size, verbose=0, callbacks=[early_stopping], validation_data=(validation_params_scaled, validation_costs_scaled))
