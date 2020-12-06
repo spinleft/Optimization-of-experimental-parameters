@@ -24,11 +24,11 @@ class Learner():
             raise ValueError
 
         # 神经网络超参数
-        self.layer_dims = [128] * 5
+        self.layer_dims = [192] * 5
         # 神经网络的验证集误差下降小于train_threshold_ratio若干次时，停止训练
         self.train_threshold_ratio = 0.01
         self.batch_size = 16                    # 神经网络训练的批量大小
-        self.dropout_prob = 0.66                 # 神经元随机失效的概率
+        self.dropout_prob = 0.6667                 # 神经元随机失效的概率
         self.regularisation_coefficient = 0.001   # loss正则化的系数
         self.max_epoch = 5000
 
@@ -196,7 +196,9 @@ class Learner():
             # Step1: 训练神经网络
             history = self.net.fit(self.history_params_list,
                                 self.history_costs_list,
-                                self.max_epoch)
+                                self.max_epoch,
+                                self.history_params_list,
+                                self.history_costs_list)
             self.max_epoch += 100
             print("last loss = %f"%history.history['loss'][-1])
             print("training epoches = %d" % len(history.epoch))
