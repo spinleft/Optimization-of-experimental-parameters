@@ -114,7 +114,6 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     plt.xlabel("t")
     plt.ylabel("wave")
     plt.plot(t * tf, wave)
-    plt.show()
 
 def params_in_condition(params):
     # 限制初始斜率
@@ -165,5 +164,8 @@ if __name__ == '__main__':
     max_boundary = np.array([3., 3., 3., 4., 4., 4., 4.])
     params = get_random_params_set(min_boundary, max_boundary, 1)[0]
     params = np.array([2.63167529, 0.0578163, -0.86597996, 2.72881756, -1.19777622, -1.14307818, 0.27867689])
+    params_approx = np.array([2.632, 0.058, -0.866, 2.729, -1.198, -1.143, 0.279])
     print(params)
     plot_wave(1, 0, 1, 1000, params)
+    plot_wave(1, 0, 1, 1000, params_approx)
+    plt.show()
