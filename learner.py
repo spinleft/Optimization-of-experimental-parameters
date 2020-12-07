@@ -69,8 +69,8 @@ class Learner():
         # 新建神经网络
         self.net = neuralnet.NeuralNet(self.min_boundary,
                                        self.max_boundary,
-                                       costs_min=-0.4,
-                                       costs_range=1.5,
+                                       costs_mean=-0.4,
+                                       costs_stdev=1.5,
                                        archive_dir=self.archive_dir,
                                        start_datetime=self.start_datetime)
         self.net.init(self.num_params,
