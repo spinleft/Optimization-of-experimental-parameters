@@ -15,14 +15,14 @@ class NeuralNet():
     def __init__(self,
                  min_boundary,
                  max_boundary,
-                 costs_mean=0,
-                 costs_stdev=1,
+                 costs_min=0,
+                 costs_range=1,
                  archive_dir=None,
                  start_datetime=None):
-        self.params_mean = (max_boundary + min_boundary) / 2
-        self.params_stdev = (max_boundary - min_boundary) / 2
-        self.costs_mean = costs_mean
-        self.costs_stdev = costs_stdev
+        self.params_min = min_boundary
+        self.params_range = max_boundary - min_boundary
+        self.costs_min = costs_min
+        self.costs_range = costs_range
         self.archive_dir = archive_dir
         self.start_datetime = start_datetime
         self.neural_net_file_prefix = 'neural_net_archive_'
@@ -79,23 +79,23 @@ class NeuralNet():
         return filename
 
     def _scale_params(self, params_unscaled):
-        params_scaled = params_unscaled - self.params_mean
-        params_scaled /= self.params_stdev
+        params_scaled = params_unscaled - self.params_min
+        params_scaled /= self.params_range
         return params_scaled
 
     def _scale_costs(self, costs_unscaled):
-        costs_scaled = costs_unscaled - self.costs_mean
-        costs_scaled /= self.costs_stdev
+        costs_scaled = costs_unscaled - self.costs_min
+        costs_scaled /= self.costs_range
         return costs_scaled
 
     def _unscale_params(self, params_scaled):
-        params_unscaled = params_scaled * self.params_stdev
-        params_unscaled += self.params_mean
+        params_unscaled = params_scaled * self.params_range
+        params_unscaled += self.params_min
         return params_unscaled
 
     def _unscale_cost(self, costs_scaled):
-        costs_unscaled = costs_scaled * self.costs_stdev
-        costs_unscaled += self.costs_mean
+        costs_unscaled = costs_scaled * self.costs_range
+        costs_unscaled += self.costs_min
         return costs_unscaled
 
     def _loss_and_metrics(self, params, costs):
