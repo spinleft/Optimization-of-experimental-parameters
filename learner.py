@@ -29,7 +29,7 @@ class Learner():
         self.train_threshold_ratio = 0.01
         self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.6667                 # 神经元随机失效的概率
-        self.regularisation_coefficient = 0.1   # loss正则化的系数
+        self.regularisation_coefficient = 0.005   # loss正则化的系数
         self.max_epoch = 5000
 
         # 训练参数
