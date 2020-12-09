@@ -5,6 +5,7 @@ import numpy as np
 import interface
 import utilities
 import neuralnet
+import parameters
 import h5py
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
@@ -19,6 +20,7 @@ class Learner():
         self.num_params = interface.num_params
         self.min_boundary = np.array(interface.min_boundary)
         self.max_boundary = np.array(interface.max_boundary)
+        self.patch_length = interface.patch_length
         if self.num_params != len(self.min_boundary) or self.num_params != len(self.max_boundary):
             print("num_params != boundary")
             raise ValueError
@@ -29,7 +31,7 @@ class Learner():
         self.train_threshold_ratio = 0.01
         self.batch_size = 16                    # 神经网络训练的批量大小
         self.dropout_prob = 0.6667                 # 神经元随机失效的概率
-        self.regularisation_coefficient = 0.01   # loss正则化的系数
+        self.regularisation_coefficient = 0.001   # loss正则化的系数
         self.max_epoch = 5000
 
         # 训练参数
@@ -83,10 +85,12 @@ class Learner():
         best_loss = float('inf')
         for _ in range(self.init_net_weight_num):
             self.net.reset_weights()
-            self.net.fit(self.history_params_list,
-                         self.history_costs_list,
+            self.net.fit(self.params_set.get_all_params(),
+                         self.params_set.get_all_costs(),
                          self.max_epoch)
-            loss = self.net.get_loss(self.history_params_list, self.history_costs_list) + 3 * self.net.get_loss(self.window_params_set, self.window_costs_set)
+            loss = self.net.get_loss(self.history_params_list, self.history_costs_list) + \
+                3 * self.net.get_loss(self.window_params_set,
+                                      self.window_costs_set)
             if loss < best_loss:
                 best_loss = loss
                 best_weights = self.net.get_weights()
@@ -95,14 +99,18 @@ class Learner():
     def _reset_neural_net(self):
         # 重置神经网络权重
         # 随机初始化网络多次，选择在窗口参数上 loss 最小的权重
-        best_loss = self.net.get_loss(self.history_params_list, self.history_costs_list) + 3 * self.net.get_loss(self.window_params_set, self.window_costs_set)
+        best_loss = self.net.get_loss(self.history_params_list, self.history_costs_list) + \
+            3 * self.net.get_loss(self.window_params_set,
+                                  self.window_costs_set)
         best_weights = self.net.get_weights()
         for _ in range(self.init_net_weight_num):
             self.net.reset_weights()
-            self.net.fit(self.history_params_list,
-                         self.history_costs_list,
+            self.net.fit(self.params_set.get_all_params(),
+                         self.params_set.get_all_costs(),
                          self.max_epoch)
-            loss = self.net.get_loss(self.history_params_list, self.history_costs_list) + 3 * self.net.get_loss(self.window_params_set, self.window_costs_set)
+            loss = self.net.get_loss(self.history_params_list, self.history_costs_list) + \
+                3 * self.net.get_loss(self.window_params_set,
+                                      self.window_costs_set)
             if loss < best_loss:
                 print("Better loss found...")
                 best_loss = loss
@@ -110,10 +118,18 @@ class Learner():
         self.net.set_weights(best_weights)
 
     def init(self):
+        # 新建参数树
+        self.params_set = parameters.Parameters(self.min_boundary,
+                                                self.max_boundary,
+                                                self.patch_length)
         # 随机产生一组参数，获取实验结果
         print("Iteration 0...")
-        self.init_params_set = self.get_init_params_set()
-        actual_init_costs_set, self.init_costs_set = self.get_experiment_costs(self.init_params_set)
+        self.init_params_set = self.params_set.get_init_params_set(
+            self.initial_params_set_size)
+        actual_init_costs_set, self.init_costs_set = self.get_experiment_costs(
+            self.init_params_set)
+        for params, cost in zip(self.init_params_set, self.init_costs_set):
+            self.params_set.insert(params, cost)
         self.history_params_list = self.init_params_set
         self.history_costs_list = self.init_costs_set
         self.actual_costs_set = actual_init_costs_set
@@ -194,29 +210,34 @@ class Learner():
         for i in range(self.last_iteration + 1, self.last_iteration + self.max_num_iteration):
             print("Iteration %d..." % i)
             # Step1: 训练神经网络
-            history = self.net.fit(self.history_params_list,
-                                self.history_costs_list,
-                                self.max_epoch,
-                                self.history_params_list,
-                                self.history_costs_list)
+            history = self.net.fit(self.params_set.get_all_params(),
+                                   self.params_set.get_all_costs(),
+                                   self.max_epoch,
+                                   self.params_set.get_all_params(),
+                                   self.params_set.get_all_costs())
             self.max_epoch += 100
-            print("last loss = %f"%history.history['loss'][-1])
+            print("last loss = %f" % history.history['loss'][-1])
             print("training epoches = %d" % len(history.epoch))
             # 测量神经网络拟合误差
-            fit_history_costs_set = self.net.predict_costs(self.history_params_list)
-            fit_loss = np.average(np.abs(self.history_costs_list - fit_history_costs_set))
-            print("fit_loss = %f" %fit_loss)
+            fit_history_costs_set = self.net.predict_costs(
+                self.params_set.get_all_params())
+            fit_loss = np.average(
+                np.abs(self.params_set.get_all_costs() - fit_history_costs_set))
+            print("fit_loss = %f" % fit_loss)
             # Step2: 产生预测参数
             index = (iteration - 1) % len(self.predict_good_params_set_size)
             # index = 0
             predict_good_params_set = []
             for window_params in self.window_params_set:
-                predict_good_params_set.append(self.get_predict_good_params_set(window_params, self.predict_good_params_set_size[index]))
-            predict_good_params_set = np.vstack(predict_good_params_set)
-            predict_random_params_set = self.get_predict_random_params_set(self.predict_random_params_set_size[index])
+                predict_good_params_set.append(self.params_set.get_normal_params_set(
+                    window_params, self.std_dev, self.predict_good_params_set_size[index]))
+            predict_good_params_set = np.concatenate(predict_good_params_set)
+            predict_random_params_set = self.params_set.get_uniform_params_set(
+                self.predict_random_params_set_size[index])
 
             # Step3: 选出下一次实验的参数
-            predict_params_set = np.vstack((predict_good_params_set, predict_random_params_set))
+            predict_params_set = np.concatenate(
+                (predict_good_params_set, predict_random_params_set))
             predict_costs_set = self.net.predict_costs(predict_params_set)
             indexes = np.argsort(predict_costs_set)
             select_params_set = []
@@ -228,17 +249,25 @@ class Learner():
             select_params_set = np.vstack(select_params_set)
 
             # Step4: 获取实验结果
-            actual_select_costs_set, select_costs_set = self.get_experiment_costs(select_params_set)
-            self.history_params_list = np.vstack((self.history_params_list, select_params_set))
-            self.history_costs_list = np.hstack((self.history_costs_list, select_costs_set))
-            self.actual_costs_set = np.hstack((self.actual_costs_set, actual_select_costs_set))
+            actual_select_costs_set, select_costs_set = self.get_experiment_costs(
+                select_params_set)
+            for params, cost in zip(select_params_set, select_costs_set):
+                self.params_set.insert(params, cost)
+            self.history_params_list = np.vstack(
+                (self.history_params_list, select_params_set))
+            self.history_costs_list = np.hstack(
+                (self.history_costs_list, select_costs_set))
+            self.actual_costs_set = np.hstack(
+                (self.actual_costs_set, actual_select_costs_set))
             # 测量神经网络预测误差
-            predict_select_costs_set = self.net.predict_costs(select_params_set)
-            predict_loss = np.average(np.abs(actual_select_costs_set - predict_select_costs_set))
-            print("predict_loss = %f" %predict_loss)
+            predict_select_costs_set = self.net.predict_costs(
+                select_params_set)
+            predict_loss = np.average(
+                np.abs(actual_select_costs_set - predict_select_costs_set))
+            print("predict_loss = %f" % predict_loss)
             # 得到新的窗口
-            indexes = np.argsort(self.history_costs_list)
-            self.window_params_set = self.history_params_list[indexes[:self.window_size[iteration]]]
+            indexes = np.argsort(self.params_set.get_all_costs())
+            self.window_params_set = self.params_set.get_all_params()[indexes[:self.window_size[iteration]]]
             iteration += 1
 
             # 记录训练结果
@@ -250,8 +279,10 @@ class Learner():
                 self.best_params = iteration_best_params
                 self.best_cost = iteration_best_cost
             # 将本次循环的最好参数和结果加入列表
-            self.best_params_list = np.vstack((self.best_params_list, iteration_best_params))
-            self.best_costs_list = np.hstack((self.best_costs_list, iteration_best_cost))
+            self.best_params_list = np.vstack(
+                (self.best_params_list, iteration_best_params))
+            self.best_costs_list = np.hstack(
+                (self.best_costs_list, iteration_best_cost))
             # 更新档案
             self.archive.update({'last_iteration': i})
             # 存档
@@ -286,7 +317,8 @@ class Learner():
     def get_predict_good_params_set(self, base_params, params_set_size):
         # 并行产生随机数
         block_size = params_set_size // self.num_cores
-        blocks = [block_size] * (self.num_cores - 1) + [params_set_size - block_size * (self.num_cores - 1)]
+        blocks = [block_size] * (self.num_cores - 1) + \
+            [params_set_size - block_size * (self.num_cores - 1)]
         multiple_results = [self.pool.apply_async(utilities.get_normal_params_set, args=(
             self.min_boundary,
             self.max_boundary,
@@ -303,7 +335,8 @@ class Learner():
     def get_predict_random_params_set(self, params_set_size):
         # 并行产生随机数
         block_size = params_set_size // self.num_cores
-        blocks = [block_size] * (self.num_cores - 1) +  [params_set_size - block_size * (self.num_cores - 1)]
+        blocks = [block_size] * (self.num_cores - 1) + \
+            [params_set_size - block_size * (self.num_cores - 1)]
         multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
             self.min_boundary,
             self.max_boundary,
@@ -328,7 +361,8 @@ class Learner():
         save_params_set = None
         # K-聚类获得典型参数
         # 构造聚类器
-        clusters = min(self.save_params_set_size, len(self.history_params_list))
+        clusters = min(self.save_params_set_size,
+                       len(self.history_params_list))
         self.k_means = KMeans(
             n_clusters=clusters, max_iter=1000)
         # 聚类后取每一类中结果最好的参数
