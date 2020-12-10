@@ -24,6 +24,7 @@ class Learner():
         if self.num_params != len(self.min_boundary) or self.num_params != len(self.max_boundary):
             print("num_params != boundary")
             raise ValueError
+        self.uncer = interface.uncer
 
         # 神经网络超参数
         self.layer_dims = [192] * 5
@@ -121,7 +122,8 @@ class Learner():
         # 新建参数树
         self.params_set = parameters.Parameters(self.min_boundary,
                                                 self.max_boundary,
-                                                self.patch_length)
+                                                self.patch_length,
+                                                self.uncer)
         # 随机产生一组参数，获取实验结果
         print("Iteration 0...")
         self.init_params_set = self.params_set.get_init_params_set(
@@ -267,7 +269,7 @@ class Learner():
             print("all_params_set_size = %d" % len(self.params_set))
             print("predict_loss = %f" % predict_loss)
             # 得到新的窗口
-            indexes = np.argsort(self.params_set.get_all_costs())
+            indexes = np.argsort(self.params_set.get_all_biased_costs())
             self.window_params_set = self.params_set.get_all_params()[indexes[:self.window_size[iteration]]]
             iteration += 1
 

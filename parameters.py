@@ -6,8 +6,9 @@ import multiprocessing
 
 class Parameters():
     class Attrs():
-        def __init__(self):
+        def __init__(self, uncer):
             self.cost = 0
+            self.uncer = uncer
             self.experiment_num = 0
 
         def is_new(self):
@@ -16,12 +17,15 @@ class Parameters():
         def get_cost(self):
             return self.cost
 
+        def get_biased_cost(self):
+            return self.cost - self.uncer / np.sqrt(self.experiment_num)
+
         def update(self, cost):
             self.cost = (self.experiment_num * self.cost +
                          cost) / (self.experiment_num + 1)
             self.experiment_num += 1
 
-    def __init__(self, min_boundary, max_boundary, patch_length):
+    def __init__(self, min_boundary, max_boundary, patch_length, uncer):
         self.min_boundary = np.array(min_boundary)
         self.max_boundary = np.array(max_boundary)
         if isinstance(patch_length, (float, int)):
@@ -32,7 +36,10 @@ class Parameters():
         for i in range(len(min_boundary)):
             self.grid.append(
                 np.arange(min_boundary[i], max_boundary[i], self.patch_length[i]))
-        self.indexes_range = np.array([len(self.grid[i])+1 for i in range(len(min_boundary))])
+        self.indexes_range = np.array(
+            [len(self.grid[i])+1 for i in range(len(min_boundary))])
+        self.uncer = uncer
+
         self.root = dict()
         self.size = 0
         self.num_cores = os.cpu_count()
@@ -62,7 +69,7 @@ class Parameters():
         curr_node = self.root
         for index in indexes[:-1]:
             curr_node = curr_node.setdefault(index, dict())
-        attr = curr_node.setdefault(indexes[-1], self.Attrs())
+        attr = curr_node.setdefault(indexes[-1], self.Attrs(self.uncer))
         if attr.is_new():
             self.size += 1
         attr.update(cost)
@@ -97,19 +104,28 @@ class Parameters():
         indexes_set = np.where(cond, indexes_set, self.indexes_range)
         params_set = self.min_boundary + indexes_set * self.patch_length
         return params_set
-    
+
     def _get_all_indexes(self, node):
         indexes = []
         for index in node:
             if isinstance(node[index], self.Attrs):
                 return np.array(list(node.keys())).reshape(-1, 1)
             sub_indexes = self._get_all_indexes(node[index])
-            indexes.append(np.concatenate(([[index]] * len(sub_indexes), sub_indexes), axis=1))
+            indexes.append(np.concatenate(
+                ([[index]] * len(sub_indexes), sub_indexes), axis=1))
         return np.concatenate(indexes)
-    
+
     def _get_all_costs(self, node):
         if isinstance(node, self.Attrs):
             return np.reshape(node.get_cost(), (1, ))
+        costs = []
+        for index in node:
+            costs.append(self._get_all_costs(node[index]))
+        return np.concatenate(costs)
+
+    def _get_all_biased_costs(self, node):
+        if isinstance(node, self.Attrs):
+            return np.reshape(node.get_biased_cost(), (1, ))
         costs = []
         for index in node:
             costs.append(self._get_all_costs(node[index]))
@@ -133,8 +149,8 @@ class Parameters():
             block_size = params_set_size // self.num_cores
             blocks = [block_size] * (self.num_cores - 1) + \
                 [params_set_size - block_size * (self.num_cores - 1)]
-            multiple_results = [self.pool.apply_async(self._get_valid_uniform_params_set, args=(
-                sub_set_size)) for sub_set_size in blocks]
+            multiple_results = [self.pool.apply_async(
+                self._get_valid_uniform_params_set, args=(sub_set_size,)) for sub_set_size in blocks]
             params_set_list = [result.get() for result in multiple_results]
             params_set = np.concatenate(params_set_list)
         else:
@@ -165,9 +181,10 @@ class Parameters():
             params_set_list = [result.get() for result in multiple_results]
             params_set = np.concatenate(params_set_list)
         else:
-            params_set = self._get_normal_params_set(base_indexes, stdev, params_set_size)
+            params_set = self._get_normal_params_set(
+                base_indexes, stdev, params_set_size)
         return params_set
-    
+
     def get_all_params(self):
         all_indexes = self._get_all_indexes(self.root)
         return self.min_boundary + all_indexes * self.patch_length
@@ -175,13 +192,18 @@ class Parameters():
     def get_all_costs(self):
         return self._get_all_costs(self.root)
 
+    def get_all_biased_costs(self):
+        return self._get_all_biased_costs(self.root)
+
+
 if __name__ == '__main__':
     import time
 
     min_boundary = [0., 0., 0., 0., 0., 0., 0.]
     max_boundary = [1., 1., 1., 1., 1., 1., 1.]
     patch_length = 0.01
-    params_set = Parameters(min_boundary, max_boundary, patch_length)
+    uncer = 0.1
+    params_set = Parameters(min_boundary, max_boundary, patch_length, uncer)
     start = time.time()
     for i in range(10):
         params = np.random.uniform(0, 1, size=(7,))
