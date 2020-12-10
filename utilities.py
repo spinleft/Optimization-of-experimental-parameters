@@ -165,9 +165,9 @@ if __name__ == '__main__':
     params = get_random_params_set(min_boundary, max_boundary, 1)[0]
     # params = np.array([2.63167529, 0.0578163, -0.86597996, 2.72881756, -1.19777622, -1.14307818, 0.27867689])
     # params_approx = np.array([2.632, 0.058, -0.866, 2.729, -1.198, -1.143, 0.279])
-    params_1 = np.array([2.63, 0.06, -0.87, 2.73, -1.20, -1.14, 0.28])
+    params_1 = np.array([2.61, 0.02, -0.91, 2.69, -1.24, -1.18, 0.24])
     params_2 = np.array([2.64, 0.07, -0.86, 2.74, -1.19, -1.13, 0.29])
-    params_3 = np.array([2.65, 0.08, -0.85, 2.75, -1.18, -1.12, 0.30])
+    params_3 = np.array([2.71, 0.12, -0.81, 2.79, -1.14, -1.08, 0.34])
     print(params)
     plot_wave(1, 0, 1, 1000, params_1)
     plot_wave(1, 0, 1, 1000, params_2)

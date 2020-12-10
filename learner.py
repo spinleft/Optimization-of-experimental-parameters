@@ -264,6 +264,7 @@ class Learner():
                 select_params_set)
             predict_loss = np.average(
                 np.abs(actual_select_costs_set - predict_select_costs_set))
+            print("all_params_set_size = %d" % len(self.params_set))
             print("predict_loss = %f" % predict_loss)
             # 得到新的窗口
             indexes = np.argsort(self.params_set.get_all_costs())
@@ -289,8 +290,7 @@ class Learner():
             # self._save_archive()
             # print("The best params in iteration %d: " % i)
             # print(iteration_best_params)
-            print("The best cost in iteration %d: " % i)
-            print(iteration_best_cost)
+            print("The best cost in iteration %d: %f" % (i, iteration_best_cost))
             # print("window_cost_set:")
             # print(self.window_costs_set)
 
