@@ -126,8 +126,7 @@ class Learner():
                                                 self.uncer)
         # 随机产生一组参数，获取实验结果
         print("Iteration 0...")
-        self.init_params_set = self.params_set.get_init_params_set(
-            self.initial_params_set_size)
+        self.init_params_set = self.get_init_params_set()
         actual_init_costs_set, self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
         for params, cost in zip(self.init_params_set, self.init_costs_set):
@@ -138,17 +137,15 @@ class Learner():
 
         # 筛选好的参数放入窗口
         indexes = np.argsort(self.init_costs_set)
-        self.window_params_set = self.init_params_set[indexes[:self.window_size[0]]]
-        self.window_costs_set = self.init_costs_set[indexes[:self.window_size[0]]]
+        self.window_params_set = self.init_params_set[indexes]
+        self.window_costs_set = self.init_costs_set[indexes]
         # 记录初始化的最好参数和结果
         self.best_params = self.init_params_set[indexes[0]]
         self.best_cost = self.init_costs_set[indexes[0]]
-        # print("The best params in iteration 0: ")
-        # print(self.best_params)
+        print("The best params in iteration 0: ")
+        print(repr(self.best_params).replace('\n', '').replace('\r', '').replace(' ', '').replace(',', ', '))
         print("The best cost in iteration 0: ")
         print(self.best_cost)
-        # print("window_cost_set:")
-        # print(self.window_costs_set)
         # 新建记录列表
         self.best_params_list = np.array([self.best_params], dtype=float)
         self.best_costs_list = np.array([self.best_cost], dtype=float)
@@ -175,15 +172,17 @@ class Learner():
         print("Iteration %d..." % self.last_iteration)
         _, self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
+        for params, cost in zip(self.init_params_set, self.init_costs_set):
+            self.params_set.insert(params, cost)
         self.history_params_list = np.vstack(
             (self.history_params_list, self.init_params_set))
         self.history_costs_list = np.hstack(
             (self.history_costs_list, self.init_costs_set))
 
-        # 筛选好的参数放入窗口，最多不超过初始参数的一半
+        # 将初始数据排序放入窗口队列
         indexes = np.argsort(self.init_costs_set)
-        self.window_params_set = self.init_params_set[indexes[:self.window_size[0]]]
-        self.window_costs_set = self.init_costs_set[indexes[:self.window_size[0]]]
+        self.window_params_set = self.init_params_set[indexes]
+        self.window_costs_set = self.init_costs_set[indexes]
         # 记录典型参数中的最好参数和结果
         self.best_params = self.init_params_set[indexes[0]]
         self.best_cost = self.init_costs_set[indexes[0]]
@@ -208,7 +207,6 @@ class Learner():
         self.pool.join()
 
     def train(self):
-        iteration = 1
         for i in range(self.last_iteration + 1, self.last_iteration + self.max_num_iteration):
             print("Iteration %d..." % i)
             # Step1: 训练神经网络
@@ -218,7 +216,6 @@ class Learner():
                                    self.params_set.get_all_params(),
                                    self.params_set.get_all_costs())
             self.max_epoch += 100
-            print("last loss = %f" % history.history['loss'][-1])
             print("training epoches = %d" % len(history.epoch))
             # 测量神经网络拟合误差
             fit_history_costs_set = self.net.predict_costs(
@@ -227,15 +224,15 @@ class Learner():
                 np.abs(self.params_set.get_all_costs() - fit_history_costs_set))
             print("fit_loss = %f" % fit_loss)
             # Step2: 产生预测参数
-            index = (iteration - 1) % len(self.predict_good_params_set_size)
-            # index = 0
+            index = (i - 1) % len(self.predict_good_params_set_size)
             predict_good_params_set = []
-            for window_params in self.window_params_set:
-                predict_good_params_set.append(self.params_set.get_normal_params_set(
-                    window_params, self.std_dev, self.predict_good_params_set_size[index]))
+            for i in range(self.window_size):
+                predict_good_params_set.append(self.get_predict_good_params_set(
+                    self.window_params_set[i], self.predict_good_params_set_size[index]))
+            self.window_params_set = self.window_params_set[self.window_size:]      # 移除用过的参数
+            self.window_costs_set = self.window_costs_set[self.window_size:]
             predict_good_params_set = np.concatenate(predict_good_params_set)
-            predict_random_params_set = self.params_set.get_uniform_params_set(
-                self.predict_random_params_set_size[index])
+            predict_random_params_set = self.get_predict_random_params_set(self.predict_random_params_set_size[index])
 
             # Step3: 选出下一次实验的参数
             predict_params_set = np.concatenate(
@@ -268,10 +265,15 @@ class Learner():
                 np.abs(actual_select_costs_set - predict_select_costs_set))
             print("all_params_set_size = %d" % len(self.params_set))
             print("predict_loss = %f" % predict_loss)
-            # 得到新的窗口
-            indexes = np.argsort(self.params_set.get_all_biased_costs())
-            self.window_params_set = self.params_set.get_all_params()[indexes[:self.window_size[iteration]]]
-            iteration += 1
+            # 将新参数加入窗口，已用过的参数按概率保留
+            for params in select_params_set:
+                if np.random.uniform() <= 1 / 2**(self.params_set.get_experiment_num(params) - 1):
+                    self.window_params_set = np.vstack((self.window_params_set, params))
+                    self.window_costs_set = np.hstack((self.window_costs_set, self.params_set.get_cost(params)))
+            # 窗口排序
+            indexes = np.argsort(self.window_costs_set)
+            self.window_params_set = self.window_params_set[indexes]
+            self.window_costs_set = self.window_costs_set[indexes]
 
             # 记录训练结果
             index = np.argmin(select_costs_set)
@@ -290,11 +292,10 @@ class Learner():
             self.archive.update({'last_iteration': i})
             # 存档
             # self._save_archive()
-            # print("The best params in iteration %d: " % i)
-            # print(iteration_best_params)
-            print("The best cost in iteration %d: %f" % (i, iteration_best_cost))
-            # print("window_cost_set:")
-            # print(self.window_costs_set)
+            print("The best params in iteration %d: " % i)
+            print(repr(iteration_best_cost).replace('\n', '').replace('\r', '').replace(' ', '').replace(',', ', '))
+            print("The best cost in iteration %d: %f" %
+                  (i, iteration_best_cost))
 
         print("The best parameters: " + str(self.best_params))
         print("The best cost: " + str(self.best_cost))
@@ -305,11 +306,8 @@ class Learner():
         block_size = self.initial_params_set_size // self.num_cores
         blocks = [block_size] * (self.num_cores - 1) + \
             [self.initial_params_set_size - block_size * (self.num_cores - 1)]
-        multiple_results = [self.pool.apply_async(utilities.get_init_params_set, args=(
-            self.min_boundary,
-            self.max_boundary,
-            params_set_size
-        )) for params_set_size in blocks]
+        multiple_results = [self.pool.apply_async(self.params_set.get_init_params_set, args=(
+            params_set_size, )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
         for i in range(1, self.num_cores):
@@ -321,12 +319,10 @@ class Learner():
         block_size = params_set_size // self.num_cores
         blocks = [block_size] * (self.num_cores - 1) + \
             [params_set_size - block_size * (self.num_cores - 1)]
-        multiple_results = [self.pool.apply_async(utilities.get_normal_params_set, args=(
-            self.min_boundary,
-            self.max_boundary,
+        multiple_results = [self.pool.apply_async(self.params_set.get_normal_params_set, args=(
             base_params,
             self.std_dev,
-            params_set_size
+            params_set_size,
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -339,10 +335,8 @@ class Learner():
         block_size = params_set_size // self.num_cores
         blocks = [block_size] * (self.num_cores - 1) + \
             [params_set_size - block_size * (self.num_cores - 1)]
-        multiple_results = [self.pool.apply_async(utilities.get_random_params_set, args=(
-            self.min_boundary,
-            self.max_boundary,
-            params_set_size
+        multiple_results = [self.pool.apply_async(self.params_set.get_uniform_params_set, args=(
+            params_set_size,
         )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -379,7 +373,8 @@ class Learner():
             else:
                 save_params_set = np.vstack(
                     (save_params_set, params_subset[index]))
-        self.archive.update({'history_params_list': self.history_params_list,
+        self.archive.update({'params_set': self.params_set,
+                             'history_params_list': self.history_params_list,
                              'history_costs_list': self.history_costs_list,
                              'best_params_list': self.best_params_list,
                              'best_costs_list': self.best_costs_list,
@@ -415,6 +410,7 @@ class Learner():
             self.max_boundary = max_boundary
 
         # 实验记录
+        self.params_set = f['params_set'][()]
         self.history_params_list = f['history_params_list'][()]
         self.history_costs_list = f['history_costs_list'][()]
         self.best_params = f['best_params'][()]

@@ -1,7 +1,5 @@
-import os
 import numpy as np
 import utilities
-import multiprocessing
 
 
 class Parameters():
@@ -19,6 +17,9 @@ class Parameters():
 
         def get_biased_cost(self):
             return self.cost - self.uncer / np.sqrt(self.experiment_num)
+        
+        def get_experiment_num(self):
+            return self.experiment_num
 
         def update(self, cost):
             self.cost = (self.experiment_num * self.cost +
@@ -42,9 +43,6 @@ class Parameters():
 
         self.root = dict()
         self.size = 0
-        self.num_cores = os.cpu_count()
-        # self.pool = multiprocessing.Pool(processes=self.num_cores)
-        self.pool = None
 
     def __len__(self):
         return self.size
@@ -64,6 +62,14 @@ class Parameters():
                 return None
             target = target[index]
         return target.get_cost()
+    
+    def _get_experiment_num(self, indexes):
+        target = self.root
+        for index in indexes:
+            if index not in target:
+                return None
+            target = target[index]
+        return target.get_experiment_num()
 
     def _insert(self, indexes, cost):
         curr_node = self.root
@@ -139,51 +145,23 @@ class Parameters():
         indexes = self._get_indexes(params)
         return self._get_cost(indexes)
 
+    def get_experiment_num(self, params):
+        indexes = self._get_indexes(params)
+        return self._get_experiment_num(indexes)
+
     def discretize(self, params):
         indexes = np.array(self._get_indexes(params))
         return self.min_boundary + indexes * self.patch_length
 
     def get_init_params_set(self, params_set_size):
-        # 并行产生随机数
-        if self.pool is not None:
-            block_size = params_set_size // self.num_cores
-            blocks = [block_size] * (self.num_cores - 1) + \
-                [params_set_size - block_size * (self.num_cores - 1)]
-            multiple_results = [self.pool.apply_async(
-                self._get_valid_uniform_params_set, args=(sub_set_size,)) for sub_set_size in blocks]
-            params_set_list = [result.get() for result in multiple_results]
-            params_set = np.concatenate(params_set_list)
-        else:
-            params_set = self._get_valid_uniform_params_set(params_set_size)
-        return params_set
+        return self._get_valid_uniform_params_set(params_set_size)
 
     def get_uniform_params_set(self, params_set_size):
-        if self.pool is not None:
-            block_size = params_set_size // self.num_cores
-            blocks = [block_size] * (self.num_cores - 1) + \
-                [params_set_size - block_size * (self.num_cores - 1)]
-            multiple_results = [self.pool.apply_async(self._get_uniform_params_set, args=(
-                sub_set_size)) for sub_set_size in blocks]
-            params_set_list = [result.get() for result in multiple_results]
-            params_set = np.concatenate(params_set_list)
-        else:
-            params_set = self._get_uniform_params_set(params_set_size)
-        return params_set
+        return self._get_uniform_params_set(params_set_size)
 
     def get_normal_params_set(self, base_params, stdev, params_set_size):
         base_indexes = self._get_indexes(base_params)
-        if self.pool is not None:
-            block_size = params_set_size // self.num_cores
-            blocks = [block_size] * (self.num_cores - 1) + \
-                [params_set_size - block_size * (self.num_cores - 1)]
-            multiple_results = [self.pool.apply_async(self._get_normal_params_set, args=(
-                base_indexes, stdev, sub_set_size)) for sub_set_size in blocks]
-            params_set_list = [result.get() for result in multiple_results]
-            params_set = np.concatenate(params_set_list)
-        else:
-            params_set = self._get_normal_params_set(
-                base_indexes, stdev, params_set_size)
-        return params_set
+        return self._get_normal_params_set(base_indexes, stdev, params_set_size)
 
     def get_all_params(self):
         all_indexes = self._get_all_indexes(self.root)
