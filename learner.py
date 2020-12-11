@@ -224,15 +224,14 @@ class Learner():
                 np.abs(self.params_set.get_all_costs() - fit_history_costs_set))
             print("fit_loss = %f" % fit_loss)
             # Step2: 产生预测参数
-            index = (i - 1) % len(self.predict_good_params_set_size)
             predict_good_params_set = []
             for i in range(self.window_size):
                 predict_good_params_set.append(self.get_predict_good_params_set(
-                    self.window_params_set[i], self.predict_good_params_set_size[index]))
+                    self.window_params_set[i], self.predict_good_params_set_size))
             self.window_params_set = self.window_params_set[self.window_size:]      # 移除用过的参数
             self.window_costs_set = self.window_costs_set[self.window_size:]
             predict_good_params_set = np.concatenate(predict_good_params_set)
-            predict_random_params_set = self.get_predict_random_params_set(self.predict_random_params_set_size[index])
+            predict_random_params_set = self.get_predict_random_params_set(self.predict_random_params_set_size)
 
             # Step3: 选出下一次实验的参数
             predict_params_set = np.concatenate(
