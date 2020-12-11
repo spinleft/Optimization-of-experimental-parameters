@@ -8,6 +8,7 @@ import neuralnet
 import parameters
 import h5py
 from sklearn.cluster import KMeans
+import scipy.optimize as so
 import matplotlib.pyplot as plt
 import multiprocessing
 
@@ -227,28 +228,53 @@ class Learner():
                 np.abs(self.params_set.get_all_costs() - fit_history_costs_set))
             print("fit_loss = %f" % fit_loss)
             # Step2: 产生预测参数
-            index = (iteration - 1) % len(self.predict_good_params_set_size)
-            # index = 0
-            predict_good_params_set = []
-            for window_params in self.window_params_set:
-                predict_good_params_set.append(self.params_set.get_normal_params_set(
-                    window_params, self.std_dev, self.predict_good_params_set_size[index]))
-            predict_good_params_set = np.concatenate(predict_good_params_set)
-            predict_random_params_set = self.params_set.get_uniform_params_set(
-                self.predict_random_params_set_size[index])
+            # index = (iteration - 1) % len(self.predict_good_params_set_size)
+            # # index = 0
+            # predict_good_params_set = []
+            # for window_params in self.window_params_set:
+            #     predict_good_params_set.append(self.params_set.get_normal_params_set(
+            #         window_params, self.std_dev, self.predict_good_params_set_size[index]))
+            # predict_good_params_set = np.concatenate(predict_good_params_set)
+            # predict_random_params_set = self.params_set.get_uniform_params_set(
+            #     self.predict_random_params_set_size[index])
 
             # Step3: 选出下一次实验的参数
-            predict_params_set = np.concatenate(
-                (predict_good_params_set, predict_random_params_set))
+            # predict_params_set = np.concatenate(
+            #     (predict_good_params_set, predict_random_params_set))
+            # predict_costs_set = self.net.predict_costs(predict_params_set)
+            # indexes = np.argsort(predict_costs_set)
+            # select_params_set = []
+            # for index in indexes:
+            #     if utilities.params_in_condition(predict_params_set[index]):
+            #         select_params_set.append(predict_params_set[index])
+            #         if len(select_params_set) >= self.subsequent_params_set_size:
+            #             break
+            # select_params_set = np.vstack(select_params_set)
+            predict_params_set = np.zeros(shape=(len(self.window_params_set) * 3, self.num_params))
+            search_bounds = list(zip(self.min_boundary, self.max_boundary))
+            count = 0
+            for start_params in self.window_params_set:
+                result = so.minimize(fun = lambda x: self.net.predict_costs(x),
+                                     x0 = start_params,
+                                     jac = lambda x: self.net.predict_costs_gradient(x),
+                                     bounds = search_bounds,
+                                     tol = self.patch_length)
+                if utilities.params_in_condition(result.x):
+                    predict_params_set[count] = result.x
+                    count += 1
+            while count < len(predict_params_set):
+                start_params = self.params_set.get_init_params_set(1)[0]
+                result = so.minimize(fun = lambda x: self.net.predict_costs(x),
+                                     x0 = start_params,
+                                     jac = lambda x: self.net.predict_costs_gradient(x),
+                                     bounds = search_bounds,
+                                     tol = self.patch_length)
+                if utilities.params_in_condition(result.x):
+                    predict_params_set[count] = result.x
+                    count += 1
             predict_costs_set = self.net.predict_costs(predict_params_set)
             indexes = np.argsort(predict_costs_set)
-            select_params_set = []
-            for index in indexes:
-                if utilities.params_in_condition(predict_params_set[index]):
-                    select_params_set.append(predict_params_set[index])
-                    if len(select_params_set) >= self.subsequent_params_set_size:
-                        break
-            select_params_set = np.vstack(select_params_set)
+            select_params_set = predict_params_set[indexes[:self.subsequent_params_set_size]]
 
             # Step4: 获取实验结果
             actual_select_costs_set, select_costs_set = self.get_experiment_costs(
@@ -290,8 +316,8 @@ class Learner():
             self.archive.update({'last_iteration': i})
             # 存档
             # self._save_archive()
-            # print("The best params in iteration %d: " % i)
-            # print(iteration_best_params)
+            print("The best params in iteration %d: " % i)
+            print(repr(iteration_best_params).replace('\n', '').replace('\r', '').replace(' ', '').replace(',', ', '))
             print("The best cost in iteration %d: %f" % (i, iteration_best_cost))
             # print("window_cost_set:")
             # print(self.window_costs_set)

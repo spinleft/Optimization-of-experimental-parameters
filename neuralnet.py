@@ -105,14 +105,14 @@ class NeuralNet():
     def get_loss(self, params, costs):
         return self._loss_and_metrics(params, costs)[0]
 
-    def fit(self, params, costs, max_epoch, validation_params=None, validation_costs=None):
+    def fit(self, params, costs, max_epoch, validation_params=None, validation_costs=None, verbose=0):
         params_scaled = self._scale_params(params)
         costs_scaled = self._scale_costs(costs)
         if validation_params is None or validation_costs is None:
             early_stopping = EarlyStopping(
                 monitor='loss', min_delta=self.train_threshold_ratio, patience=500, mode='min')
             history = self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
-                                    batch_size=self.batch_size, verbose=0, callbacks=[early_stopping], use_multiprocessing=True)
+                                    batch_size=self.batch_size, verbose=verbose, callbacks=[early_stopping], use_multiprocessing=True)
         else:
             validation_params_scaled = self._scale_params(validation_params)
             validation_costs_scaled = self._scale_costs(validation_costs)
@@ -120,14 +120,24 @@ class NeuralNet():
                 monitor='val_loss', min_delta=self.train_threshold_ratio, patience=500, mode='min')
 
             history = self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
-                                    batch_size=self.batch_size, verbose=0, callbacks=[early_stopping], validation_data=(validation_params_scaled, validation_costs_scaled))
+                                    batch_size=self.batch_size, verbose=verbose, callbacks=[early_stopping], validation_data=(validation_params_scaled, validation_costs_scaled))
         return history
 
     def predict_costs(self, params):
+        if params.shape == (self.num_params, ):
+            params = params.reshape(1, -1)
         params_scaled = self._scale_params(params)
         costs_scaled = np.array(self.model.predict(params_scaled, verbose=0, use_multiprocessing=True)).flatten()
         costs_unscaled = self._unscale_cost(costs_scaled)
         return costs_unscaled
+    
+    def predict_costs_gradient(self, params):
+        params_tensor = tf.convert_to_tensor([self._scale_params(params)])
+        with tf.GradientTape() as tape:
+            tape.watch(params_tensor)
+            cost = self.model(params_tensor)
+        cost_grad = tape.gradient(cost, params_tensor).numpy()
+        return cost_grad * self.costs_stdev
 
     def reset_weights(self):
         for layer in self.model.layers:
@@ -146,3 +156,21 @@ class NeuralNet():
 
 def gelu(x):
     return 0.5 * x * (1 + tf.tanh(tf.sqrt(2 / np.pi) * (x + 0.044715 * tf.pow(x, 3))))
+
+if __name__ == '__main__':
+    min_boundary = np.array([-1])
+    max_boundary = np.array([1])
+    net = NeuralNet(min_boundary, max_boundary, 0, 1)
+    net.init(7, [192, 192, 192, 192, 192], 0.01, 16, 0.667, 0.001)
+    x_train = np.random.uniform([-1, -1, -1, -1, -1, -1, -1], [1, 1, 1, 1, 1, 1, 1], size=(100, 7)) + np.random.normal(0, 0.1, size=(100, 7))
+    y_train = np.sum(x_train**2, axis=1).flatten()
+    net.fit(x_train, y_train, 1000, verbose=1)
+    x = np.arange(-3, 3, 0.01)
+    grid = np.concatenate((x.reshape(-1, 1), np.zeros(shape=(len(x), 6))), axis=1)
+    y = net.predict_costs(grid)
+    utilities.plt.plot(x, y)
+    utilities.plt.show()
+    # grad = net.predict_costs_gradient(np.array(0.5))
+    # print(grad)
+    # grad = net.predict_costs_gradient(np.array(-0.5))
+    # print(grad)

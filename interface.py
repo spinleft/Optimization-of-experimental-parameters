@@ -213,8 +213,8 @@ class Interface():
                 cost = t - min_time
                 costs.append(cost)
             else:
-                actual_costs.append(10.)
-                costs.append(10.)
+                actual_costs.append(2.5)
+                costs.append(2.5)
             print("actual_cost = %f, cost = %f"%(actual_cost, cost))
         actual_costs = np.array(actual_costs)
         costs = np.array(costs)
