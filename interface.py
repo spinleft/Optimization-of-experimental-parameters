@@ -29,7 +29,7 @@ class Interface():
         self.subsequent_params_set_size = 20
         self.window_size = 10
         self.predict_good_params_set_size = 20000
-        self.predict_random_params_set_size = 200000
+        self.predict_random_params_set_size = [i**2 * 20000 for i in range(5)]
         self.save_params_set_size = 20                      # 存档中保存的典型参数数量
 
         # 实验文件参数
