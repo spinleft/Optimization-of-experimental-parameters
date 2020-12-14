@@ -111,21 +111,34 @@ class NeuralNet():
         if validation_params is None or validation_costs is None:
             early_stopping = EarlyStopping(
                 monitor='loss', min_delta=self.train_threshold_ratio, patience=200, mode='min')
-            history = self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
-                                    batch_size=self.batch_size, verbose=0, callbacks=[early_stopping], use_multiprocessing=True)
+            history = self.model.fit(params_scaled,
+                                     costs_scaled,
+                                     epochs=max_epoch,
+                                     batch_size=self.batch_size,
+                                     verbose=0,
+                                     callbacks=[early_stopping],
+                                     use_multiprocessing=True)
         else:
             validation_params_scaled = self._scale_params(validation_params)
             validation_costs_scaled = self._scale_costs(validation_costs)
             early_stopping = EarlyStopping(
                 monitor='val_loss', min_delta=self.train_threshold_ratio, patience=500, mode='min')
 
-            history = self.model.fit(params_scaled, costs_scaled, epochs=max_epoch,
-                                    batch_size=self.batch_size, verbose=0, callbacks=[early_stopping], validation_data=(validation_params_scaled, validation_costs_scaled))
+            history = self.model.fit(params_scaled,
+                                     costs_scaled,
+                                     epochs=max_epoch,
+                                     batch_size=self.batch_size,
+                                     verbose=0,
+                                     callbacks=[early_stopping],
+                                     validation_data=(
+                                         validation_params_scaled, validation_costs_scaled),
+                                     use_multiprocessing=True)
         return history
 
     def predict_costs(self, params):
         params_scaled = self._scale_params(params)
-        costs_scaled = np.array(self.model.predict(params_scaled, verbose=0, use_multiprocessing=True)).flatten()
+        costs_scaled = np.array(self.model.predict(
+            params_scaled, verbose=0, use_multiprocessing=True)).flatten()
         costs_unscaled = self._unscale_cost(costs_scaled)
         return costs_unscaled
 

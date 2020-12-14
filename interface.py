@@ -15,7 +15,7 @@ class Interface():
         self.num_params = 7
         self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
         self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
-        self.patch_length = 0.01
+        self.patch_length = 0.03
         self.startpoint = 10.
         self.endpoint = 0.
         self.tf = 15.71

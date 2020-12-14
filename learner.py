@@ -90,8 +90,8 @@ class Learner():
                          self.params_set.get_all_costs(),
                          self.max_epoch)
             loss = self.net.get_loss(self.history_params_list, self.history_costs_list) + \
-                3 * self.net.get_loss(self.window_params_set,
-                                      self.window_costs_set)
+                3 * self.net.get_loss(self.window_params_set[:self.window_size],
+                                      self.window_costs_set[:self.window_size])
             if loss < best_loss:
                 best_loss = loss
                 best_weights = self.net.get_weights()
@@ -123,17 +123,19 @@ class Learner():
         self.params_set = parameters.Parameters(self.min_boundary,
                                                 self.max_boundary,
                                                 self.patch_length,
-                                                self.uncer)
+                                                self.uncer,
+                                                self.archive_dir,
+                                                self.start_datetime)
         # 随机产生一组参数，获取实验结果
         print("Iteration 0...")
-        self.init_params_set = self.get_init_params_set()
-        actual_init_costs_set, self.init_costs_set = self.get_experiment_costs(
+        self.init_params_set = self.get_valid_params_set(
+            self.initial_params_set_size)
+        self.actual_costs_set, self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
         for params, cost in zip(self.init_params_set, self.init_costs_set):
             self.params_set.insert(params, cost)
         self.history_params_list = self.init_params_set
         self.history_costs_list = self.init_costs_set
-        self.actual_costs_set = actual_init_costs_set
 
         # 筛选好的参数放入窗口
         indexes = np.argsort(self.init_costs_set)
@@ -158,7 +160,7 @@ class Learner():
         print("Initializing net...")
         self._initialize_neural_net()
         # 存档
-        # self._save_archive()
+        self._save_archive()
 
     def load(self, start_datetime):
         # 加载存档
@@ -171,7 +173,7 @@ class Learner():
         # 读取上次保存的典型参数，获取实验结果
         self.last_iteration += 1
         print("Iteration %d..." % self.last_iteration)
-        _, self.init_costs_set = self.get_experiment_costs(
+        self.actual_costs_set, self.init_costs_set = self.get_experiment_costs(
             self.init_params_set)
         for params, cost in zip(self.init_params_set, self.init_costs_set):
             self.params_set.insert(params, cost)
@@ -194,14 +196,8 @@ class Learner():
             (self.best_costs_list, self.best_cost))
         # 更新档案
         self.archive.update({'last_iteration': self.last_iteration})
-        # 加载神经网络
-        self.net = neuralnet.NeuralNet(self.min_boundary,
-                                       self.max_boundary,
-                                       archive_dir=self.archive_dir,
-                                       start_datetime=self.start_datetime)
-        self.net.load(self.archive, self.load_neural_net_archive_filename)
         # 存档
-        # self._save_archive()
+        self._save_archive()
 
     def close(self):
         self.pool.close()
@@ -211,11 +207,13 @@ class Learner():
         for i in range(self.last_iteration + 1, self.last_iteration + self.max_num_iteration):
             print("Iteration %d..." % i)
             # Step1: 训练神经网络
-            history = self.net.fit(self.params_set.get_all_params(),
-                                   self.params_set.get_all_costs(),
+            params_train = self.params_set.get_all_params()
+            costs_train = self.params_set.get_all_costs()
+            history = self.net.fit(params_train,
+                                   costs_train,
                                    self.max_epoch,
-                                   self.params_set.get_all_params(),
-                                   self.params_set.get_all_costs())
+                                   params_train,
+                                   costs_train)
             self.max_epoch += 100
             print("training epoches = %d" % len(history.epoch))
             # 测量神经网络拟合误差
@@ -295,7 +293,7 @@ class Learner():
             # 更新档案
             self.archive.update({'last_iteration': i})
             # 存档
-            # self._save_archive()
+            self._save_archive()
             print("The best params in iteration %d: " % i)
             print(repr(iteration_best_cost).replace('\n', '').replace(
                 '\r', '').replace(' ', '').replace(',', ', '))
@@ -304,14 +302,14 @@ class Learner():
 
         print("The best parameters: " + str(self.best_params))
         print("The best cost: " + str(self.best_cost))
-        # self._save_archive()
+        self._save_archive()
 
-    def get_init_params_set(self):
+    def get_valid_params_set(self, params_set_size):
         # 并行产生随机数
-        block_size = self.initial_params_set_size // self.num_cores
+        block_size = params_set_size // self.num_cores
         blocks = [block_size] * (self.num_cores - 1) + \
-            [self.initial_params_set_size - block_size * (self.num_cores - 1)]
-        multiple_results = [self.pool.apply_async(self.params_set.get_init_params_set, args=(
+            [params_set_size - block_size * (self.num_cores - 1)]
+        multiple_results = [self.pool.apply_async(self.params_set.get_valid_params_set, args=(
             params_set_size, )) for params_set_size in blocks]
         params_set_list = [result.get() for result in multiple_results]
         params_set = params_set_list[0]
@@ -378,7 +376,7 @@ class Learner():
             else:
                 save_params_set = np.vstack(
                     (save_params_set, params_subset[index]))
-        self.archive.update({'params_set': self.params_set,
+        self.archive.update({'params_set_archive_filename': self.params_set.save(),
                              'history_params_list': self.history_params_list,
                              'history_costs_list': self.history_costs_list,
                              'best_params_list': self.best_params_list,
@@ -415,7 +413,7 @@ class Learner():
             self.max_boundary = max_boundary
 
         # 实验记录
-        self.params_set = f['params_set'][()]
+        self.load_params_set_archive_filename = f['params_set_archive_filename'][()]
         self.history_params_list = f['history_params_list'][()]
         self.history_costs_list = f['history_costs_list'][()]
         self.best_params = f['best_params'][()]
@@ -424,8 +422,23 @@ class Learner():
         self.best_costs_list = f['best_costs_list'][()]
         self.last_iteration = f['last_iteration'][()]
         self.init_params_set = f['save_params_set'][()]
-        self.load_neural_net_archive_filename = f['neural_net_archive_filename'][(
-        )]
+        self.load_neural_net_archive_filename = f['neural_net_archive_filename'][()]
+
+        # 加载历史训练数据
+        self.params_set = parameters.Parameters(self.min_boundary,
+                                                self.max_boundary,
+                                                self.patch_length,
+                                                self.uncer,
+                                                self.archive_dir,
+                                                self.start_datetime)
+        self.params_set.load(self.load_params_set_archive_filename)
+
+        # 加载神经网络
+        self.net = neuralnet.NeuralNet(self.min_boundary,
+                                       self.max_boundary,
+                                       archive_dir=self.archive_dir,
+                                       start_datetime=self.start_datetime)
+        self.net.load(self.archive, self.load_neural_net_archive_filename)
 
     def plot_best_costs_list(self):
         x_axis = np.arange(start=0, stop=len(

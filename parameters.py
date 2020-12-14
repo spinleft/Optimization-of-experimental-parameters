@@ -1,5 +1,7 @@
+import os
 import numpy as np
 import utilities
+import h5py
 
 
 class Parameters():
@@ -20,13 +22,16 @@ class Parameters():
         
         def get_experiment_num(self):
             return self.experiment_num
+        
+        def set_experiment_num(self, experiment_num):
+            self.experiment_num = experiment_num
 
         def update(self, cost):
             self.cost = (self.experiment_num * self.cost +
                          cost) / (self.experiment_num + 1)
             self.experiment_num += 1
 
-    def __init__(self, min_boundary, max_boundary, patch_length, uncer):
+    def __init__(self, min_boundary, max_boundary, patch_length, uncer, archive_dir=None, start_datetime=None):
         self.min_boundary = np.array(min_boundary)
         self.max_boundary = np.array(max_boundary)
         if isinstance(patch_length, (float, int)):
@@ -43,6 +48,10 @@ class Parameters():
 
         self.root = dict()
         self.size = 0
+
+        self.archive_dir = archive_dir
+        self.start_datetime = start_datetime
+        self.params_set_file_prefix = 'params_set_archive_'
 
     def __len__(self):
         return self.size
@@ -70,6 +79,14 @@ class Parameters():
                 return None
             target = target[index]
         return target.get_experiment_num()
+    
+    def _set_experiment_num(self, indexes, experiment_num):
+        target = self.root
+        for index in indexes:
+            if index not in target:
+                return None
+            target = target[index]
+        return target.set_experiment_num(experiment_num)
 
     def _insert(self, indexes, cost):
         curr_node = self.root
@@ -136,6 +153,14 @@ class Parameters():
         for index in node:
             costs.append(self._get_all_costs(node[index]))
         return np.concatenate(costs)
+    
+    def _get_all_experiment_num(self, node):
+        if isinstance(node, self.Attrs):
+            return np.reshape(node.get_experiment_num(), (1, ))
+        experiment_num = []
+        for index in node:
+            experiment_num.append(self._get_all_experiment_num(node[index]))
+        return np.concatenate(experiment_num)
 
     def insert(self, params, cost):
         indexes = self._get_indexes(params)
@@ -148,12 +173,16 @@ class Parameters():
     def get_experiment_num(self, params):
         indexes = self._get_indexes(params)
         return self._get_experiment_num(indexes)
+    
+    def set_experiment_num(self, params, experiment_num):
+        indexes = self._get_indexes(params)
+        self._set_experiment_num(indexes, experiment_num)
 
     def discretize(self, params):
         indexes = np.array(self._get_indexes(params))
         return self.min_boundary + indexes * self.patch_length
 
-    def get_init_params_set(self, params_set_size):
+    def get_valid_params_set(self, params_set_size):
         return self._get_valid_uniform_params_set(params_set_size)
 
     def get_uniform_params_set(self, params_set_size):
@@ -172,6 +201,34 @@ class Parameters():
 
     def get_all_biased_costs(self):
         return self._get_all_biased_costs(self.root)
+
+    def get_all_experiment_num(self):
+        return self._get_all_experiment_num(self.root)
+    
+    def save(self):
+        filename = os.path.join(
+            self.archive_dir, self.params_set_file_prefix + self.start_datetime + '.h5')
+        dirname = os.path.dirname(filename)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        all_params = self.get_all_params()
+        all_costs = self.get_all_costs()
+        all_experiment_num = self.get_all_experiment_num()
+        f = h5py.File(filename, 'w')
+        f.create_dataset('all_params', data=all_params)
+        f.create_dataset('all_costs', data=all_costs)
+        f.create_dataset('all_experiment_num', data=all_experiment_num)
+        f.close()
+        return filename
+
+    def load(self, filename):
+        f = h5py.File(filename, 'r')
+        all_params = f['all_params'][()]
+        all_costs = f['all_costs'][()]
+        all_experiment_num = f['all_experiment_num'][()]
+        for params, cost, experiment_num in zip(all_params, all_costs, all_experiment_num):
+            self.insert(params, cost)
+            self.set_experiment_num(params, experiment_num)
 
 
 if __name__ == '__main__':
