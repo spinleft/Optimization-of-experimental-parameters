@@ -23,7 +23,7 @@ class Interface():
 
         # 训练参数
         self.target_cost = 0
-        self.max_num_iteration = 30                         # 最大迭代次数
+        self.max_num_iteration = 100                         # 最大迭代次数
         self.initial_params_set_size = 20                   # 初始实验数量
         self.subsequent_params_set_size = 20
         self.window_size = 10
