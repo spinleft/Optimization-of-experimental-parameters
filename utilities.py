@@ -222,16 +222,16 @@ def print_archive(archive_filename):
 
 if __name__ == '__main__':
     # 查看随机波形随机
-    min_boundary = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
-    max_boundary = np.array([0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9])
-    params = np.random.uniform(min_boundary, max_boundary)
-    # params = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.2, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+    # min_boundary = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+    # max_boundary = np.array([0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9])
+    # params = np.random.uniform(min_boundary, max_boundary)
+    params = np.array([0.17, 0.28, 0.34, 0.25, 0.35, 0.76, 0.29, 0.53, 0.68, 0.32])
 
     print(params)
-    startpoint = 1
-    endpoint = 0
-    tf = 1
-    sample_rate = 1000
+    startpoint = 10.
+    endpoint = 0.
+    tf = 15.71
+    sample_rate = 5000
     t = np.arange(0, tf, 1 / sample_rate)
 
     num_samples = len(params) // 2
@@ -243,7 +243,9 @@ if __name__ == '__main__':
     wave_samples = np.concatenate(([startpoint], wave_samples, [endpoint]))
 
     wave = waveform_bezier(startpoint, endpoint, tf, sample_rate, params)
-    
+    for y in wave[1:]:
+        if y >= 10.0:
+            print(y)
     plt.scatter(t_samples, wave_samples)
     plt.plot(t, wave)
     plt.show()

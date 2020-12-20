@@ -213,7 +213,7 @@ class Interface():
             len_x = len(x)
             t = 0
             bad = False
-            wave = utilities.waveform_interpolate(
+            wave = utilities.waveform_bezier(
                 self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
             for i in range(1, len_x):
                 if wave[i] > 10.0 or wave[i] == float('nan'):

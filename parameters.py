@@ -44,7 +44,7 @@ class Parameters():
             self.grid.append(
                 np.arange(min_boundary[i], max_boundary[i], self.patch_length[i]))
         self.indexes_range = np.array(
-            [len(self.grid[i]) for i in range(len(min_boundary))])
+            [(len(self.grid[i]) + 1) for i in range(len(min_boundary))])
         self.uncer = uncer
 
         self.root = dict()
@@ -124,8 +124,8 @@ class Parameters():
         indexes_set = np.around(indexes_set)
         cond = indexes_set >= 0
         indexes_set = np.where(cond, indexes_set, 0)
-        cond = indexes_set <= self.indexes_range
-        indexes_set = np.where(cond, indexes_set, self.indexes_range)
+        cond = indexes_set < self.indexes_range
+        indexes_set = np.where(cond, indexes_set, self.indexes_range - 1)
         params_set = self.min_boundary + indexes_set * self.patch_length
         return params_set
 
