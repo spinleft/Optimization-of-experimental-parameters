@@ -45,7 +45,7 @@ class Learner():
         self.max_num_iteration = interface.max_num_iteration
         self.save_params_set_size = interface.save_params_set_size
         self.init_net_weight_num = 10       # 初始化神经网络时尝试随机权重的次数
-        self.std_dev = 0.05                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
+        self.std_dev = 0.1                 # 生成正态分布参数的标准差（将上下界差缩放为1后）
 
         # 训练文件
         self.archive_dir = interface.archive_dir                    # 存档目录

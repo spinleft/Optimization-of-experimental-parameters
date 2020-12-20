@@ -113,6 +113,48 @@ def cubic_interpolate(t_samples, wave_samples, sample_rate):
     wave_interp = f(t_interp)
     return wave_interp
 
+def waveform_bezier(startpoint, endpoint, tf, sample_rate, params):
+    if len(params) % 2 == 1:
+        print("num_params must be an even number")
+        raise ValueError
+    num_samples = len(params) // 2
+    t_scale = np.cumprod(1. - params[:num_samples])
+    t_samples = (np.concatenate(([1], t_scale[:-1])) - t_scale).cumsum() * tf
+    wave_samples = np.cumprod(params[num_samples:]) * (startpoint - endpoint) + endpoint
+
+    t_nodes = np.zeros(shape=(2 * num_samples + 1, ))
+    wave_nodes = np.zeros(shape=(2 * num_samples + 1, ))
+    t_nodes[0] = 0.
+    t_nodes[-1] = tf
+    wave_nodes[0] = startpoint
+    wave_nodes[-1] = endpoint
+    for i in range(num_samples - 1):
+        t_nodes[2*i+1] = t_samples[i]
+        t_nodes[2*i+2] = (t_samples[i] + t_samples[i+1]) / 2
+        wave_nodes[2*i+1] = wave_samples[i]
+        wave_nodes[2*i+2] = (wave_samples[i] + wave_samples[i+1]) / 2
+    t_nodes[-2] = t_samples[-1]
+    wave_nodes[-2] = wave_samples[-1]
+
+    t_step = 1. / sample_rate
+    t_fit = np.arange(0, tf, t_step)
+    wave_fit = np.zeros(shape=(len(t_fit), ))
+    index = np.zeros(shape=(num_samples + 1, ), dtype=int)
+    for i in range(1, num_samples + 1):
+        temp = int(t_nodes[2*i] // t_step)
+        index[i] = temp + 1 if temp * t_step < t_nodes[2*i] else temp
+    
+    for i in range(num_samples):
+        a = t_nodes[2*i] - 2 * t_nodes[2*i+1] + t_nodes[2*i+2]
+        b = 2 * (t_nodes[2*i+1] - t_nodes[2*i])
+        c = t_nodes[2*i] - t_fit[index[i]: index[i+1]]
+        if a == 0:
+            temp = - c / b
+        else:
+            temp = (np.sqrt(b**2 - 4 * a * c) - b) / (2 * a)
+        wave_fit[index[i]: index[i+1]] = (wave_nodes[2*i] - 2 * wave_nodes[2*i+1] + wave_nodes[2*i+2]) * temp**2 + 2 * (wave_nodes[2*i+1] - wave_nodes[2*i]) * temp + wave_nodes[2*i]
+    return wave_fit
+
 
 def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     num_params = len(params)
@@ -180,10 +222,10 @@ def print_archive(archive_filename):
 
 if __name__ == '__main__':
     # 查看随机波形随机
-    # min_boundary = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3])
-    # max_boundary = np.array([0.3, 0.3, 0.3, 0.3, 0.3, 0.9, 0.9, 0.9, 0.9, 0.9])
-    # params = np.random.uniform(min_boundary, max_boundary)
-    params = np.array([0.37, 0.13, 0.16, 0.35, 0.49, 0.2, 0.52, 0.13, 0.45, 0.79])
+    min_boundary = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+    max_boundary = np.array([0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9])
+    params = np.random.uniform(min_boundary, max_boundary)
+    # params = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.2, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
 
     print(params)
     startpoint = 1
@@ -200,7 +242,7 @@ if __name__ == '__main__':
     ) * (startpoint - endpoint) + endpoint
     wave_samples = np.concatenate(([startpoint], wave_samples, [endpoint]))
 
-    wave = waveform_interpolate(startpoint, endpoint, tf, sample_rate, params)
+    wave = waveform_bezier(startpoint, endpoint, tf, sample_rate, params)
     
     plt.scatter(t_samples, wave_samples)
     plt.plot(t, wave)

@@ -12,8 +12,8 @@ class Interface():
     def __init__(self):
         # 实验参数
         self.num_params = 10
-        self.min_boundary = [0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1]
-        self.max_boundary = [0.35, 0.35, 0.35, 0.35, 0.35, 0.9, 0.9, 0.9, 0.9, 0.9]
+        self.min_boundary = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+        self.max_boundary = [0.4, 0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9, 0.9]
         self.patch_length = 0.01
         self.startpoint = 10.
         self.endpoint = 0.
@@ -23,7 +23,7 @@ class Interface():
 
         # 训练参数
         self.target_cost = 0
-        self.max_num_iteration = 100                         # 最大迭代次数
+        self.max_num_iteration = 40                         # 最大迭代次数
         self.initial_params_set_size = 20                   # 初始实验数量
         self.subsequent_params_set_size = 20
         self.window_size = 10
