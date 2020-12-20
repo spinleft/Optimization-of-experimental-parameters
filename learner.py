@@ -125,7 +125,8 @@ class Learner():
                                                 self.patch_length,
                                                 self.uncer,
                                                 self.archive_dir,
-                                                self.start_datetime)
+                                                self.start_datetime,
+                                                self.interface)
         # 随机产生一组参数，获取实验结果
         print("Iteration 0...")
         self.init_params_set = self.get_valid_params_set(
@@ -241,7 +242,7 @@ class Learner():
             indexes = np.argsort(predict_costs_set)
             select_params_set = []
             for index in indexes:
-                if utilities.params_in_condition(predict_params_set[index]):
+                if self.interface.params_in_condition(predict_params_set[index]):
                     select_params_set.append(predict_params_set[index])
                     if len(select_params_set) >= self.subsequent_params_set_size:
                         break
@@ -413,7 +414,8 @@ class Learner():
             self.max_boundary = max_boundary
 
         # 实验记录
-        self.load_params_set_archive_filename = f['params_set_archive_filename'][()]
+        self.load_params_set_archive_filename = f['params_set_archive_filename'][(
+        )]
         self.history_params_list = f['history_params_list'][()]
         self.history_costs_list = f['history_costs_list'][()]
         self.best_params = f['best_params'][()]
@@ -422,7 +424,8 @@ class Learner():
         self.best_costs_list = f['best_costs_list'][()]
         self.last_iteration = f['last_iteration'][()]
         self.init_params_set = f['save_params_set'][()]
-        self.load_neural_net_archive_filename = f['neural_net_archive_filename'][()]
+        self.load_neural_net_archive_filename = f['neural_net_archive_filename'][(
+        )]
 
         # 加载历史训练数据
         self.params_set = parameters.Parameters(self.min_boundary,

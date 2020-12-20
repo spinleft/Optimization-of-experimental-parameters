@@ -122,7 +122,7 @@ class NeuralNet():
             validation_params_scaled = self._scale_params(validation_params)
             validation_costs_scaled = self._scale_costs(validation_costs)
             early_stopping = EarlyStopping(
-                monitor='val_loss', min_delta=self.train_threshold_ratio, patience=500, mode='min')
+                monitor='val_loss', min_delta=self.train_threshold_ratio, patience=200, mode='min')
 
             history = self.model.fit(params_scaled,
                                      costs_scaled,

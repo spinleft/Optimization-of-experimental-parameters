@@ -2,7 +2,6 @@ import os
 import getopt
 import sys
 import numpy as np
-import h5py
 import utilities
 import learner
 from scipy import constants
@@ -12,10 +11,10 @@ import simulation
 class Interface():
     def __init__(self):
         # 实验参数
-        self.num_params = 7
-        self.min_boundary = [-3., -3., -3., -3., -3., -3., -3.]
-        self.max_boundary = [3., 3., 3., 3., 3., 3., 3.]
-        self.patch_length = 0.03
+        self.num_params = 10
+        self.min_boundary = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+        self.max_boundary = [0.5, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9, 0.9, 0.9]
+        self.patch_length = 0.01
         self.startpoint = 10.
         self.endpoint = 0.
         self.tf = 15.71
@@ -24,12 +23,12 @@ class Interface():
 
         # 训练参数
         self.target_cost = 0
-        self.max_num_iteration = 100                        # 最大迭代次数
+        self.max_num_iteration = 30                         # 最大迭代次数
         self.initial_params_set_size = 20                   # 初始实验数量
         self.subsequent_params_set_size = 20
         self.window_size = 10
-        self.predict_good_params_set_size = 20000
-        self.predict_random_params_set_size = [i**2 * 20000 for i in range(5)]
+        self.predict_good_params_set_size = 100000
+        self.predict_random_params_set_size = [i**2 * 50000 for i in range(5)]
         self.save_params_set_size = 20                      # 存档中保存的典型参数数量
 
         # 实验文件参数
@@ -37,13 +36,33 @@ class Interface():
         self.tf_filename = "//192.168.0.134/Share/mlparams/waveform/tf.txt"     # 终止时间文件名
         self.signal_dir = "//192.168.0.134/Share/mlparams/index"                # 实验信号文件目录
         self.result_dir = "./results"                                           # 实验结果目录
-        self.signal_index = 1                                                   # 信号文件初始序号
+        # 信号文件初始序号
+        self.signal_index = 1
         self.init_result_index = 183                                            # 初始结果序号
         self.result_index = self.init_result_index
 
         # 训练文件参数
         self.archive_dir = "./archives"
         self.load_archive_datetime = None
+
+    def params_in_condition(self, params):
+        # 限制初始斜率
+        # a_1 = -1 - np.sum(params)
+        # coef = np.hstack((a_1, params))
+        # l = int((len(params) + 1) / 2)
+        # slope = coef[0]
+        # for i in range(l):
+        #     slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
+        # if slope <= 0 and abs(slope) < 50:
+        #     # 限制上下限
+        #     wave = waveform_polyn(1, 0, 1, 80000, params)
+        #     if np.max(wave) <= 1:
+        #         return True
+        #     else:
+        #         return False
+        # else:
+        #     return False
+        return True
 
     def get_experiment_costs(self, params_set):
         return self.get_experiment_costs_test(params_set)
@@ -52,8 +71,10 @@ class Interface():
         costs = np.array([], dtype=float)
         for params in params_set:
             # 生成波形
-            wave1 = utilities.waveform_linear(params[0], params[1], self.tf, self.sample_rate)
-            wave2 = utilities.waveform_linear(params[2], params[3], self.tf, self.sample_rate)
+            wave1 = utilities.waveform_linear(
+                params[0], params[1], self.tf, self.sample_rate)
+            wave2 = utilities.waveform_linear(
+                params[2], params[3], self.tf, self.sample_rate)
             # wave3 = utilities.waveform_linear(params[4], params[5], self.tf, self.sample_rate)
             # wave4 = utilities.waveform_linear(params[0], params[7], self.tf, self.sample_rate)
             # 保存波形到文件
@@ -118,7 +139,7 @@ class Interface():
                 # bad = ...
                 if temp[1] > 1e6:
                     bad = False
-            print("atom num = %f, cost = %.5f"%(temp[1], temp[0]))
+            print("atom num = %f, cost = %.5f" % (temp[1], temp[0]))
             costs = np.hstack((costs, cost))
         return costs
 
@@ -127,7 +148,7 @@ class Interface():
         for params in params_set:
             # utilities.plot_wave(self.startpoint, self.endpoint, params[-1], self.sample_rate, params[:-1])
             # 生成波形
-            wave = utilities.waveform(
+            wave = utilities.waveform_polyn(
                 self.startpoint, self.endpoint, params[-1], self.sample_rate, params[:-1])
             # 保存波形到文件
             wave_filename = os.path.join(self.wave_dir, 'dipole1evp.txt')
@@ -174,7 +195,7 @@ class Interface():
                 # bad = ...
                 if temp[1] > 1e5:
                     bad = False
-            print("atom num = %f, cost = %.5f"%(temp[1], temp[0]))
+            print("atom num = %f, cost = %.5f" % (temp[1], temp[0]))
             costs = np.hstack((costs, cost))
         return costs
 
@@ -182,6 +203,8 @@ class Interface():
         actual_costs = []
         costs = []
         for params in params_set:
+            print(repr(params).replace('\n', '').replace(
+                '\r', '').replace(' ', '').replace(',', ', '))
             k = 5.0
             g = 9.8
             x_step = 1.0 / self.sample_rate
@@ -190,7 +213,7 @@ class Interface():
             len_x = len(x)
             t = 0
             bad = False
-            wave = utilities.waveform(
+            wave = utilities.waveform_interpolate(
                 self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
             for i in range(1, len_x):
                 if wave[i] > 10.0 or wave[i] == float('nan'):
@@ -213,9 +236,11 @@ class Interface():
                 cost = t - min_time
                 costs.append(cost)
             else:
-                actual_costs.append(10.)
-                costs.append(10.)
-            print("actual_cost = %f, cost = %f"%(actual_cost, cost))
+                actual_cost = 10.
+                cost = 10.
+                actual_costs.append(actual_cost)
+                costs.append(actual_cost)
+            print("actual_cost = %f, cost = %f" % (actual_cost, cost))
         actual_costs = np.array(actual_costs)
         costs = np.array(costs)
         return (actual_costs, costs)
@@ -223,55 +248,13 @@ class Interface():
     def get_experiment_costs_simulation(self, params_set):
         costs = np.array([], dtype=float)
         for params in params_set:
-            wave = utilities.waveform(
+            wave = utilities.waveform_polyn(
                 self.startpoint, self.endpoint, self.tf, self.sample_rate, params)
             cost = simulation.calculate_temperature(wave, self.sample_rate)
             cost += cost * np.random.normal(0, 0.1)
             cost = np.log(cost / 0.084)
             costs = np.hstack((costs, cost))
         return costs
-
-
-def print_archive(archive_filename):
-    f = h5py.File(archive_filename, 'r')
-    print("****** 实验参数 ******")
-    num_params = f['num_params'][()]
-    print("---- num_params = %d ----"%num_params)
-    min_boundary = f['min_boundary'][()]
-    print("---- min_boundary = " + repr(min_boundary) + " ----")
-    max_boundary = f['max_boundary'][()]
-    print("---- max_boundary = " + repr(max_boundary) + " ----")
-    
-    print("****** 实验记录 ******")
-
-    print("----                                 history_params_list                                     |    history_costs_list ----")
-    history_params_list = f['history_params_list'][()]
-    history_costs_list = f['history_costs_list'][()]
-    for (params, cost) in zip(history_params_list, history_costs_list):
-        print(repr(params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', ') + ' | ' + str(cost))
-
-    best_params = f['best_params'][()]
-    print("---- best_params = " + repr(best_params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', ') + " ----")
-
-    best_cost = f['best_cost'][()]
-    print("---- best_cost = %d ----"%best_cost)
-
-    print("----                                   best_params_list                                       |    best_costs_list ----")
-    best_params_list = f['best_params_list'][()]
-    best_costs_list = f['best_costs_list'][()]
-    for (params, cost) in zip(best_params_list, best_costs_list):
-        print(repr(params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', ') + ' | ' + str(cost))
-    
-    last_iteration = f['last_iteration'][()]
-    print("---- last_iteration = %d ----"%last_iteration)
-
-    save_params_set = f['save_params_set'][()]
-    print("---- save_params_set ----")
-    for params in save_params_set:
-        print(repr(params).replace('\n','').replace('\r', '').replace(' ', '').replace(',', ', '))
-    
-    load_neural_net_archive_filename = f['neural_net_archive_filename'][()]
-    print("---- load_neural_net_archive_filename = " + load_neural_net_archive_filename + " ----")
 
 
 def main(argv):
@@ -289,7 +272,7 @@ def main(argv):
             datetime = value
         elif option in ("-p", "--print"):
             archive_filename = './archives/archive_' + value + '.h5'
-            print_archive(archive_filename)
+            utilities.print_archive(archive_filename)
             return
     interface = Interface()
     learn = learner.Learner(interface)

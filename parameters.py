@@ -31,7 +31,8 @@ class Parameters():
                          cost) / (self.experiment_num + 1)
             self.experiment_num += 1
 
-    def __init__(self, min_boundary, max_boundary, patch_length, uncer, archive_dir=None, start_datetime=None):
+    def __init__(self, min_boundary, max_boundary, patch_length, uncer, archive_dir=None, start_datetime=None, interface=None):
+        self.interface = interface
         self.min_boundary = np.array(min_boundary)
         self.max_boundary = np.array(max_boundary)
         if isinstance(patch_length, (float, int)):
@@ -43,7 +44,7 @@ class Parameters():
             self.grid.append(
                 np.arange(min_boundary[i], max_boundary[i], self.patch_length[i]))
         self.indexes_range = np.array(
-            [len(self.grid[i])+1 for i in range(len(min_boundary))])
+            [len(self.grid[i]) for i in range(len(min_boundary))])
         self.uncer = uncer
 
         self.root = dict()
@@ -104,7 +105,7 @@ class Parameters():
             while True:
                 indexes = rng.integers(0, self.indexes_range)
                 params_set[i] = self.min_boundary + indexes * self.patch_length
-                if utilities.params_in_condition(params_set[i]):
+                if self.interface.params_in_condition(params_set[i]):
                     break
         return params_set
 

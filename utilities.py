@@ -1,5 +1,6 @@
 import os
 import time
+import h5py
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
@@ -70,7 +71,7 @@ def save_dict_to_txt_file(tdict, filename):
         out_file.close()
 
 
-def waveform(startpoint, endpoint, tf, sample_rate, params):
+def waveform_polyn(startpoint, endpoint, tf, sample_rate, params):
     num_params = len(params)
     a_1 = endpoint / startpoint - 1 - np.sum(params)
     coef = np.hstack((a_1, params))
@@ -84,18 +85,33 @@ def waveform(startpoint, endpoint, tf, sample_rate, params):
     wave = startpoint * wave
     return wave
 
+
 def waveform_linear(starpoint, endpoint, tf, sample_rate):
     t = np.arange(0, tf, 1 / sample_rate) / tf
     wave = starpoint + (endpoint - starpoint) * t
     return wave
 
-def wave_interpolate(wave_old, tf, sample_rate_new):
-    t_old = np.linspace(0, tf, len(wave_old))
-    f = interpolate.interp1d(t_old, wave_old, kind='quadratic')
-    t_step_new = 1. / sample_rate_new
-    t_new = np.arange(0, tf, t_step_new)
-    wave_new = f(t_new)
-    return wave_new
+
+def waveform_interpolate(startpoint, endpoint, tf, sample_rate, params):
+    if len(params) % 2 == 1:
+        print("num_params must be an even number")
+        raise ValueError
+    num_samples = len(params) // 2
+    t_scale = (1. - params[:num_samples]).cumprod()
+    t_samples = (np.concatenate(([1], t_scale[:-1])) - t_scale).cumsum() * tf
+    t_samples = np.concatenate(([0.], t_samples, [tf]))
+    wave_samples = params[num_samples:].cumprod(
+    ) * (startpoint - endpoint) + endpoint
+    wave_samples = np.concatenate(([startpoint], wave_samples, [endpoint]))
+    return cubic_interpolate(t_samples, wave_samples, sample_rate)
+
+
+def cubic_interpolate(t_samples, wave_samples, sample_rate):
+    f = interpolate.interp1d(t_samples, wave_samples, kind='cubic')
+    t_step = 1. / sample_rate
+    t_interp = np.arange(0, t_samples[-1], t_step)
+    wave_interp = f(t_interp)
+    return wave_interp
 
 
 def plot_wave(startpoint, endpoint, tf, sample_rate, params):
@@ -115,61 +131,80 @@ def plot_wave(startpoint, endpoint, tf, sample_rate, params):
     plt.ylabel("wave")
     plt.plot(t * tf, wave)
 
-def params_in_condition(params):
-    # 限制初始斜率
-    a_1 = -1 - np.sum(params)
-    coef = np.hstack((a_1, params))
-    l = int((len(params) + 1) / 2)
-    slope = coef[0]
-    for i in range(l):
-        slope += (np.power(2, 2*i+3) - 1) / (2 * i + 3) * coef[l+i]
-    if slope <= 0 and abs(slope) < 50:
-        # 限制上下限
-        wave = waveform(1, 0, 1, 80000, params)
-        if np.max(wave) <= 1:
-            return True
-        else:
-            return False
-    else:
-        return False
+def print_archive(archive_filename):
+    f = h5py.File(archive_filename, 'r')
+    print("****** 实验参数 ******")
+    num_params = f['num_params'][()]
+    print("---- num_params = %d ----" % num_params)
+    min_boundary = f['min_boundary'][()]
+    print("---- min_boundary = " + repr(min_boundary) + " ----")
+    max_boundary = f['max_boundary'][()]
+    print("---- max_boundary = " + repr(max_boundary) + " ----")
 
-def get_init_params_set(min_boundary, max_boundary, params_set_size):
-    rng = np.random.default_rng()
-    params_set = np.zeros(shape=(params_set_size, len(min_boundary)))
-    for i in range(params_set_size):
-        params = rng.uniform(min_boundary, max_boundary)
-        while not params_in_condition(params):
-            params = rng.uniform(min_boundary, max_boundary)
-        params_set[i] = params
-    return params_set
+    print("****** 实验记录 ******")
 
-def get_random_params_set(min_boundary, max_boundary, params_set_size):
-    rng = np.random.default_rng()
-    return rng.uniform(min_boundary, max_boundary, size=(params_set_size, len(min_boundary)))
+    print("----                                 history_params_list                                     |    history_costs_list ----")
+    history_params_list = f['history_params_list'][()]
+    history_costs_list = f['history_costs_list'][()]
+    for (params, cost) in zip(history_params_list, history_costs_list):
+        print(repr(params).replace('\n', '').replace('\r', '').replace(
+            ' ', '').replace(',', ', ') + ' | ' + str(cost))
 
-def get_normal_params_set(min_boundary, max_boundary, base_params, std_dev, params_set_size):
-    rng = np.random.default_rng()
-    std_dev_scale = std_dev * (np.array(max_boundary) - np.array(min_boundary))
-    params_set = rng.normal(base_params, std_dev_scale, size=(params_set_size, len(min_boundary)))
-    cond = params_set >= min_boundary
-    params_set = np.where(cond, params_set, min_boundary)
-    cond = params_set <= max_boundary
-    params_set = np.where(cond, params_set, max_boundary)
-    return params_set
+    best_params = f['best_params'][()]
+    print("---- best_params = " + repr(best_params).replace('\n',
+                                                            '').replace('\r', '').replace(' ', '').replace(',', ', ') + " ----")
+
+    best_cost = f['best_cost'][()]
+    print("---- best_cost = %d ----" % best_cost)
+
+    print("----                                   best_params_list                                       |    best_costs_list ----")
+    best_params_list = f['best_params_list'][()]
+    best_costs_list = f['best_costs_list'][()]
+    for (params, cost) in zip(best_params_list, best_costs_list):
+        print(repr(params).replace('\n', '').replace('\r', '').replace(
+            ' ', '').replace(',', ', ') + ' | ' + str(cost))
+
+    last_iteration = f['last_iteration'][()]
+    print("---- last_iteration = %d ----" % last_iteration)
+
+    save_params_set = f['save_params_set'][()]
+    print("---- save_params_set ----")
+    for params in save_params_set:
+        print(repr(params).replace('\n', '').replace(
+            '\r', '').replace(' ', '').replace(',', ', '))
+
+    load_neural_net_archive_filename = f['neural_net_archive_filename'][()]
+    print("---- load_neural_net_archive_filename = " +
+          load_neural_net_archive_filename + " ----")
 
 
 if __name__ == '__main__':
     # 查看随机波形随机
-    min_boundary = np.array([-3., -3., -3., -4., -4., -4., -4.])
-    max_boundary = np.array([3., 3., 3., 4., 4., 4., 4.])
-    params = get_random_params_set(min_boundary, max_boundary, 1)[0]
+    min_boundary = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3])
+    max_boundary = np.array([0.3, 0.3, 0.3, 0.3, 0.3, 0.9, 0.9, 0.9, 0.9, 0.9])
+    params = np.random.uniform(min_boundary, max_boundary)
     # params = np.array([2.63167529, 0.0578163, -0.86597996, 2.72881756, -1.19777622, -1.14307818, 0.27867689])
     # params_approx = np.array([2.632, 0.058, -0.866, 2.729, -1.198, -1.143, 0.279])
-    params_1 = np.array([-3., 3.03, -1.2, -3., 3.03, -3., 0.69])
+    # params_1 = np.array([-3., 3.03, -1.2, -3., 3.03, -3., 0.69])
     # params_2 = np.array([2.64, 0.07, -0.86, 2.74, -1.19, -1.13, 0.29])
     # params_3 = np.array([2.71, 0.12, -0.81, 2.79, -1.14, -1.08, 0.34])
     print(params)
-    plot_wave(1, 0, 1, 1000, params_1)
-    # plot_wave(1, 0, 1, 1000, params_2)
-    # plot_wave(1, 0, 1, 1000, params_3)
+    startpoint = 1
+    endpoint = 0
+    tf = 1
+    sample_rate = 1000
+    t = np.arange(0, tf, 1 / sample_rate)
+
+    num_samples = len(params) // 2
+    t_scale = (1. - params[:num_samples]).cumprod()
+    t_samples = (np.concatenate(([1], t_scale[:-1])) - t_scale).cumsum() * tf
+    t_samples = np.concatenate(([0.], t_samples, [tf]))
+    wave_samples = params[num_samples:].cumprod(
+    ) * (startpoint - endpoint) + endpoint
+    wave_samples = np.concatenate(([startpoint], wave_samples, [endpoint]))
+
+    wave = waveform_interpolate(startpoint, endpoint, tf, sample_rate, params)
+    
+    plt.scatter(t_samples, wave_samples)
+    plt.plot(t, wave)
     plt.show()
