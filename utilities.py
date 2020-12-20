@@ -180,14 +180,11 @@ def print_archive(archive_filename):
 
 if __name__ == '__main__':
     # 查看随机波形随机
-    min_boundary = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3])
-    max_boundary = np.array([0.3, 0.3, 0.3, 0.3, 0.3, 0.9, 0.9, 0.9, 0.9, 0.9])
-    params = np.random.uniform(min_boundary, max_boundary)
-    # params = np.array([2.63167529, 0.0578163, -0.86597996, 2.72881756, -1.19777622, -1.14307818, 0.27867689])
-    # params_approx = np.array([2.632, 0.058, -0.866, 2.729, -1.198, -1.143, 0.279])
-    # params_1 = np.array([-3., 3.03, -1.2, -3., 3.03, -3., 0.69])
-    # params_2 = np.array([2.64, 0.07, -0.86, 2.74, -1.19, -1.13, 0.29])
-    # params_3 = np.array([2.71, 0.12, -0.81, 2.79, -1.14, -1.08, 0.34])
+    # min_boundary = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.3, 0.3, 0.3, 0.3, 0.3])
+    # max_boundary = np.array([0.3, 0.3, 0.3, 0.3, 0.3, 0.9, 0.9, 0.9, 0.9, 0.9])
+    # params = np.random.uniform(min_boundary, max_boundary)
+    params = np.array([0.37, 0.13, 0.16, 0.35, 0.49, 0.2, 0.52, 0.13, 0.45, 0.79])
+
     print(params)
     startpoint = 1
     endpoint = 0
