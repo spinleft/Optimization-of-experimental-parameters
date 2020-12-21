@@ -232,7 +232,7 @@ class Interface():
             if not bad:
                 actual_cost = t - min_time
                 actual_costs.append(actual_cost)
-                t += t * np.random.normal(0, 0.1)
+                t += t * np.random.normal(0, 0.05)
                 cost = t - min_time
                 costs.append(cost)
             else:
