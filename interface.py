@@ -12,8 +12,8 @@ class Interface():
     def __init__(self):
         # 实验参数
         self.num_params = 10
-        self.min_boundary = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
-        self.max_boundary = [0.4, 0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9, 0.9]
+        self.min_boundary = [0.02, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+        self.max_boundary = [0.3, 0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9, 0.9]
         self.patch_length = 0.01
         self.startpoint = 10.
         self.endpoint = 0.
@@ -232,7 +232,7 @@ class Interface():
             if not bad:
                 actual_cost = t - min_time
                 actual_costs.append(actual_cost)
-                t += t * np.random.normal(0, 0.05)
+                # t += t * np.random.normal(0, 0.05)
                 cost = t - min_time
                 costs.append(cost)
             else:

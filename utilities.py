@@ -225,7 +225,7 @@ if __name__ == '__main__':
     # min_boundary = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
     # max_boundary = np.array([0.4, 0.4, 0.4, 0.4, 0.9, 0.9, 0.9, 0.9])
     # params = np.random.uniform(min_boundary, max_boundary)
-    params = np.array([0.1, 0.41, 0.41, 0.41, 0.1, 0.38, 0.58, 0.1, 0.52, 0.9])
+    params = np.array([0.03, 0.31, 0.25, 0.37, 0.27, 0.77, 0.44, 0.32, 0.45, 0.86])
 
     print(params)
     startpoint = 10.
